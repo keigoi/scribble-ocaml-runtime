@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: c78289b7d3f993374d15920e783d18c8)
+# DO NOT EDIT (digest: 3923bb24fc09d4bf0c8609c84c40bd2a)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -35,6 +35,19 @@ true: annot, bin_annot
 <ppx/*.ml{,i,y}>: pkg_compiler-libs.common
 <ppx/*.ml{,i,y}>: pkg_ppx_deriving.api
 <ppx/*.ml{,i,y}>: pkg_ppx_tools.metaquot
+# Executable test_multiparty
+<tests/test_multiparty_base.{native,byte}>: oasis_executable_test_multiparty_byte
+<tests/*.ml{,i,y}>: oasis_executable_test_multiparty_byte
+<tests/test_multiparty_base.{native,byte}>: oasis_executable_test_multiparty_native
+<tests/*.ml{,i,y}>: oasis_executable_test_multiparty_native
+<tests/test_multiparty_base.{native,byte}>: pkg_oUnit
+<tests/test_multiparty_base.{native,byte}>: pkg_str
+<tests/test_multiparty_base.{native,byte}>: pkg_threads
+<tests/test_multiparty_base.{native,byte}>: use_session-ocaml
+<tests/*.ml{,i,y}>: pkg_oUnit
+<tests/*.ml{,i,y}>: pkg_str
+<tests/*.ml{,i,y}>: pkg_threads
+<tests/*.ml{,i,y}>: use_session-ocaml
 # OASIS_STOP
 
 "examples": not_hygienic

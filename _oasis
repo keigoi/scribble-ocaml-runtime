@@ -15,7 +15,8 @@ Library "session-ocaml"
     Session, UnixAdapter
   InternalModules:
     Channel,
-    Monitor
+    Monitor,
+    Multiparty_base
   ByteOpt: -rectypes
   NativeOpt: -rectypes
   BuildDepends: threads, str
@@ -47,4 +48,14 @@ Executable ppx_session
   BuildTools: ocamlbuild
   MainIs: ppx_session_ex.ml
   BuildDepends: compiler-libs.common, ppx_tools.metaquot, ppx_deriving.api
+  CompiledObject: best
+
+Executable "test_multiparty"
+  Path: tests
+  BuildTools: ocamlbuild
+  MainIs: test_multiparty_base.ml
+  Install: false
+  ByteOpt: -rectypes -linkall
+  NativeOpt: -rectypes -linkall
+  BuildDepends: session-ocaml, oUnit
   CompiledObject: best

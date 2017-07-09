@@ -18,7 +18,7 @@ let test_uchan () =
 let test_mchan () =
   print_endline "test_mchan";
   
-  let shared = MChan.create_shared () in
+  let shared = MChan.create () in
   
   let cli (myname,hername,first) =
     print_endline (myname ^ " started.");
@@ -47,7 +47,7 @@ let test_mchan () =
   in
   fork ("cli1","cli2",true) cli;
   fork ("cli2","cli1",false) cli;
-  let mymap = MChan.accept ~myname:"srv" ~count:2 shared in
+  let mymap = MChan.accept ~myname:"srv" ~cli_count:2 shared in
   let cli1 = MChan.get_connection mymap "cli1"
   and cli2 = MChan.get_connection mymap "cli2"
   in

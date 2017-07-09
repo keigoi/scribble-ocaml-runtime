@@ -1,4 +1,4 @@
-PKG session-ocaml session-ocaml.ppx session-ocaml.ppx_lens
+PKG session-ocaml session-ocaml.ppx ppx_deriving session-ocaml.ppx_lens
 FLG -rectypes
 B +threads
 S .

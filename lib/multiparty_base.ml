@@ -15,11 +15,11 @@ module Chan = Channel
 module MChan : sig
   (* (\* the entry point *\) *)
   type shared
-  val create_shared : unit -> shared
+  val create : unit -> shared
     
   (* a session channel to communicate with another role *)
   type t
-  val accept : shared -> myname:string -> count:int -> t
+  val accept : shared -> myname:string -> cli_count:int -> t
   val connect : shared -> myname:string -> t
   val get_connection : t -> othername:string -> UChan.t
 end = struct
@@ -31,10 +31,10 @@ end = struct
      the session hash   *)
   type shared = (string * t Chan.t) Chan.t
                          
-  let create_shared = Chan.create
+  let create = Chan.create
                     
                     
-  let accept sh ~myname ~count =
+  let accept sh ~myname ~cli_count =
     let me = myname in
 
     (* accept all connections *)
@@ -46,7 +46,7 @@ end = struct
         gather (cnt-1)
       end
     in
-    gather count;
+    gather cli_count;
     
     (* hashtbl to record sessions between (r1,r2) *)
     let hashhash = Hashtbl.create 42

@@ -70,14 +70,14 @@ let session_select which labl =
   in new_exp
   
 (* Converts match clauses to handle branching.
-  | `lab1 -> e1
+  | `lab1(pat) -> e1
   | ..
-  | `labN -> eN
+  | `labN(pat) -> eN
   ==> 
-  | `lab1(p),r -> _branch e0? (p,r) e1
+  | `lab1(_,pat,p1) -> _branch e0? p1 e1
   | ..
-  | `fin(p),r -> _branch e0? (p,r) eN)
-  : [`lab1 of 'p1 | .. | `labN of 'pN] * 'a -> 'b)
+  | `labN(_,pat,pN) -> _branch e0? pN eN)
+  : [`lab1 of 'x * 'v1 * 'p1 | .. | `labN of 'x * 'vN * 'pN] -> 'b)
 *)
 let session_branch_clauses which cases =
   let branch_exp =
@@ -88,9 +88,6 @@ let session_branch_clauses which cases =
   let conv = function
     | {pc_lhs={ppat_desc=Ppat_variant(labl,pat);ppat_loc;ppat_attributes};pc_guard;pc_rhs=rhs_orig} ->
        if pat=None then
-         let open Ast_convenience in
-         let open Ast_helper in
-         let open Ast_helper in
          let protocol_var = newname "match_p" 0 in
          let polarity_var = newname "match_q" 0 in
          let pat = [%pat? ( [%p Pat.variant labl (Some(pvar protocol_var)) ], [%p pvar polarity_var])] in
@@ -133,10 +130,10 @@ let expression_mapper id mapper exp attrs =
 
   (* slot bind *)
   (* let%lin {lab} = e1 in e2 ==> Session.(>>=) (e1 ~bindto:lab) (fun () -> e2) *)
-  | "lin", Pexp_let (Nonrecursive, vbl, expression) ->
+  | "slot", Pexp_let (Nonrecursive, vbl, expression) ->
       let new_exp = slot_bind vbl expression in
       Some (mapper.Ast_mapper.expr mapper { new_exp with pexp_attributes })
-  | "lin", _ -> error pexp_loc "Invalid content for extension %lin"
+  | "slot", _ -> error pexp_loc "Invalid content for extension %lin"
 
   (* session selection *)
   (* [%select0 `labl] ==> _select (fun x -> `labl(x)) *)

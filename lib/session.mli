@@ -11,7 +11,7 @@ val _2 : ('a, 'b, ('s0 * ('s1 * ('a * 'ss))), ('s0 * ('s1 * ('b * 'ss)))) slot
 val _3 : ('a, 'b, ('s0 * ('s1 * ('s2 * ('a * 'ss)))), ('s0 * ('s1 * ('s2 * ('b * 'ss))))) slot
 
 (* parameterized monads *)
-type ('x,'y,'a) monad
+type ('x,'y,'a) monad = 'x -> 'y * 'a
 
 val return : 'v -> ('x,'x,'v) monad
 val (>>=) : ('x,'y,'a) monad -> ('a -> ('y, 'z, 'b) monad) -> ('x,'z,'b) monad

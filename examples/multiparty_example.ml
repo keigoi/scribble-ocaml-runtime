@@ -1,3 +1,4 @@
+(* ocamlfind ocamlc -c -rectypes -thread -package session-ocaml,session-ocaml.ppx,session-ocaml.ppx_lens,ppx_deriving examples/multiparty_example.ml *)
 open Multiparty
 [%%s_syntax_rebind (module Multiparty.Syntax) ]   
 
@@ -28,8 +29,14 @@ let msg_Query : 'dir 'v 'p. ([>`Query of 'dir * 'v * 'p], 'dir, 'v, 'p) lab =
   {_pack=(fun (dir,v) -> `Query(Obj.magic dir,v,Obj.magic ()))}
 let msg_Yes : 'dir 'v 'p. ([>`Yes of 'dir * 'v * 'p], 'dir, 'v, 'p) lab =
   {_pack=(fun (dir,v) -> `Yes(Obj.magic dir,v,Obj.magic ()))}
+let msg_No : 'dir 'v 'p. ([>`No of 'dir * 'v * 'p], 'dir, 'v, 'p) lab =
+  {_pack=(fun (dir,v) -> `No(Obj.magic dir,v,Obj.magic ()))}
 let msg_Payment : 'dir 'v 'p. ([>`Payment of 'dir * 'v * 'p], 'dir, 'v, 'p) lab =
   {_pack=(fun (dir,v) -> `Payment(Obj.magic dir,v,Obj.magic ()))}
+let msg_Ack : 'dir 'v 'p. ([>`Ack of 'dir * 'v * 'p], 'dir, 'v, 'p) lab =
+  {_pack=(fun (dir,v) -> `Ack(Obj.magic dir,v,Obj.magic ()))}
+let msg_Bye : 'dir 'v 'p. ([>`Bye of 'dir * 'v * 'p], 'dir, 'v, 'p) lab =
+  {_pack=(fun (dir,v) -> `Bye(Obj.magic dir,v,Obj.magic ()))}
 
 let role_agent : [`A] role = __mkrole "agent"
 let role_client : [`C] role = __mkrole "client"
@@ -51,21 +58,37 @@ let _in : 'p -> 'p sess = Obj.magic
 let ch = new_channel ()
 
 type 'a ctx = <s : 'a>
-[@@deriving lens ]
+[@@deriving lens]
 
 open Syntax.SessionN
 
 let booking_client () =
-  let%slot #s = connect_C ch in
   
-  send s role_agent msg_Query "hello" >>
+  let%slot #s = connect_C ch in
 
-  (* let%msg `Quote(v) = recv s agent *)
-  (* in *)
-  __receive s role_agent >>= fun (`Quote(_,v,p)) ->
-  __set s (_in p) >>
-
-  send s role_agent msg_Yes () >>
-  send s role_server msg_Payment "123-4567, Nishi-ku, Nagoya, Japan" >>
-  return ()
+  let rec loop () = 
     
+    send s role_agent msg_Query "from London to Paris, 10th July 2017" >>
+  
+    let%msg `Quote(price) = recv s role_agent
+    in
+    (* __receive s role_agent >>= fun (`Quote(_,price,p)) -> *)
+    (* __set s (_in p) >> *)
+  
+    if price < 100 then
+      begin
+        send s role_agent msg_Yes () >>
+        send s role_server msg_Payment "123-4567, Nishi-ku, Nagoya, Japan" >>
+          
+        let%msg `Ack() = recv s role_agent
+        in
+        return ()
+        (* __receive s role_agent >>= fun (`Ack(_,(),p)) -> *)
+        (* __set s (_in p) *)
+      end
+    else
+      send s role_agent msg_No ()
+  in
+  loop () >>
+  send s role_agent msg_Bye ()
+      

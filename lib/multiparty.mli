@@ -1,14 +1,16 @@
 type 'g channel
 type 'p sess
 type 'r role
-type ('br, 'dir, 'v, 'p) lab = {
-    _pack : 'dir role * 'v -> 'br
+type ('br, 'payload) lab = {
+    _pack : 'payload -> 'br
   }
+type _raw_sess
 
 type ('pre,'post,'a) monad
 val return : 'x -> ('p, 'p, 'x) monad
 val (>>=) : ('pre, 'mid, 'a) monad -> ('a -> ('mid, 'post, 'b) monad) -> ('pre, 'post, 'b) monad
 val (>>) : ('pre, 'mid, 'a) monad -> ('mid, 'post, 'b) monad -> ('pre, 'post, 'b) monad
+val _run_internal : 'a -> ('b -> ('a, 'a, 'c) monad) -> 'b -> 'c
 
 type empty = Empty
 type ('p,'q,'pre,'post) slot = ('pre -> 'p) * ('pre -> 'q -> 'post)
@@ -32,11 +34,11 @@ val __accept :
 
 val send :
   ([ `send of 'br ] sess, 'p sess, 'pre, 'post) slot ->
-  'dir role -> ('br, 'dir, 'v, 'p) lab -> 'v -> ('pre, 'post, unit) monad
+  'dir role -> ('br, 'dir role * 'v * 'p) lab -> 'v -> ('pre, 'post, unit) monad
 
-val recv :
-  ([ `recv of 'br ] sess, 'p sess, 'pre, 'post) slot ->
-  'dir role -> ('br, 'dir, 'v, 'p) lab -> ('pre, 'post, 'v) monad
+(* val recv : *)
+(*   ([ `recv of 'br ] sess, 'p sess, 'pre, 'post) slot -> *)
+(*   'dir role -> ('br, 'dir, 'v, 'p) lab -> ('pre, 'post, 'v) monad *)
 
 val close :
   ([ `close ] sess, empty, 'pre, 'post) slot ->
@@ -48,11 +50,11 @@ module Syntax : sig
     val __receive
         :  ([`recv of 'br] sess, empty, 'pre, 'post) slot
            -> 'dir role
-           -> ('pre, 'post, 'br) monad
+           -> ('pre, 'post, 'br * _raw_sess) monad
     
     val __set
         :  (empty, 'p sess, 'pre, 'post) slot
-           -> 'p sess
+           -> 'p * _raw_sess
            -> ('pre, 'post, unit) monad
   end
 end    

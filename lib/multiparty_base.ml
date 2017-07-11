@@ -21,10 +21,11 @@ module MChan : sig
   type t
   val accept : shared -> myname:string -> cli_count:int -> t
   val connect : shared -> myname:string -> t
+  val myname : t -> string
   val get_connection : t -> othername:string -> UChan.t
 end = struct
   (* 'session hash' is a hash table from role id to untyped session chan *)
-  type t = (string, UChan.t) Hashtbl.t
+  type t = {name: string; sess: (string, UChan.t) Hashtbl.t}
 
   (* entry point -- shared channel; 
      the payload is the client's id and a typed channel to send bach
@@ -32,7 +33,6 @@ end = struct
   type shared = (string * t Chan.t) Chan.t
                          
   let create = Chan.create
-                    
                     
   let accept sh ~myname ~cli_count =
     let me = myname in
@@ -84,24 +84,34 @@ end = struct
         let s = create_or_get_session me r1 in
         Hashtbl.add otherhash me s;
         (* and send back *)
-        Chan.send ret otherhash;
+        Chan.send ret {name=r1; sess=otherhash};
         (* don't forget to prepare mine! *)
         Hashtbl.add myhash r1 s;
       ) rethash;
-    myhash
+    {name=myname; sess=myhash}
 
   let connect sh ~myname =
     let ret = Chan.create () in
     Chan.send sh (myname,ret);
     Chan.receive ret
+
+  let myname {name} = name
     
-  let get_connection myhash ~othername =
+  let get_connection {sess=myhash} ~othername =
     try
       Hashtbl.find myhash othername
     with
     | Not_found ->
-       failwith
-         (Printf.sprintf
-            "impossible: session channel to %s not found"
-            othername)
+       let msg =
+         let r = ref [] in
+         Hashtbl.iter (fun x _ -> r := x ::!r) myhash;
+         Printf.sprintf
+            "impossible: session channel to %s not found; %s"
+            othername (String.concat "," !r)
+       in
+       failwith msg
+       (* failwith *)
+       (*   (Printf.sprintf *)
+       (*      "impossible: session channel to %s not found" *)
+       (*      othername) *)
 end

@@ -10,47 +10,81 @@ type booking
 type booking_C = booking_C_1
 and booking_C_1 =
   [`send of
-    [`Query of [`A] * string *
-      [`recv of [`Quote of [`A] * int *
+    [`Query of [`A] role * string *
+      [`recv of [`Quote of [`A] role * int *
         booking_C_1]]
-    |`Yes of [`A] * unit *
+    |`Yes of [`A] role * unit *
       [`send of
-        [`Payment of [`S] * string *
-          [`recv of [`Ack of [`S] * unit *
+        [`Payment of [`S] role * string *
+          [`recv of [`Ack of [`S] role * unit *
             booking_C_2]]]]
-    |`No of [`A] * unit *
+    |`No of [`A] role * unit *
       booking_C_2]]
 and booking_C_2 =
   [`send of
-    [`Bye of [`A] * unit *
+    [`Bye of [`A] role * unit *
       [`close]]]
-         
-let msg_Query : 'dir 'v 'p. ([>`Query of 'dir * 'v * 'p], 'dir, 'v, 'p) lab =
-  {_pack=(fun (dir,v) -> `Query(Obj.magic dir,v,Obj.magic ()))}
-let msg_Yes : 'dir 'v 'p. ([>`Yes of 'dir * 'v * 'p], 'dir, 'v, 'p) lab =
-  {_pack=(fun (dir,v) -> `Yes(Obj.magic dir,v,Obj.magic ()))}
-let msg_No : 'dir 'v 'p. ([>`No of 'dir * 'v * 'p], 'dir, 'v, 'p) lab =
-  {_pack=(fun (dir,v) -> `No(Obj.magic dir,v,Obj.magic ()))}
-let msg_Payment : 'dir 'v 'p. ([>`Payment of 'dir * 'v * 'p], 'dir, 'v, 'p) lab =
-  {_pack=(fun (dir,v) -> `Payment(Obj.magic dir,v,Obj.magic ()))}
-let msg_Ack : 'dir 'v 'p. ([>`Ack of 'dir * 'v * 'p], 'dir, 'v, 'p) lab =
-  {_pack=(fun (dir,v) -> `Ack(Obj.magic dir,v,Obj.magic ()))}
-let msg_Bye : 'dir 'v 'p. ([>`Bye of 'dir * 'v * 'p], 'dir, 'v, 'p) lab =
-  {_pack=(fun (dir,v) -> `Bye(Obj.magic dir,v,Obj.magic ()))}
 
-let role_agent : [`A] role = __mkrole "agent"
-let role_client : [`C] role = __mkrole "client"
-let role_server : [`S] role = __mkrole "server"
+type booking_S = booking_S_1
+and booking_S_1 = 
+  [`recv of
+    [`Dummy of [`A] role * unit *
+      booking_S_1
+    |`Yes of [`A] role * unit *
+      [`recv of [`Payment of [`C] role * string *
+        [`send of 
+          [`Ack of [`C] role * unit *
+            _EndState]]]]
+    |`No of [`A] role * unit *
+      _EndState]]
+and _EndState = 
+  [`close]
+
+type booking_A = booking_A_1
+and booking_A_1 = 
+  [`recv of
+    [`Query of [`C] role * string *
+      [`send of 
+        [`Quote of [`C] role * int *
+          [`send of 
+            [`Dummy of [`S] role * unit *
+              booking_A_1]]]]
+    |`Yes of [`C] role * unit *
+      [`send of 
+        [`Yes of [`S] role * unit *
+          booking_A_2]]
+    |`No of [`C] role * unit *
+      [`send of 
+        [`No of [`S] role * unit *
+          booking_A_2]]]]
+and booking_A_2 = 
+  [`recv of [`Bye of [`C] role * unit *
+    [`close]]]
+         
+let msg_Query : 'a. ([>`Query of 'a], 'a) lab = {_pack=(fun a -> `Query(a))}
+let msg_Quote : 'a. ([>`Quote of 'a], 'a) lab = {_pack=(fun a -> `Quote(a))}
+let msg_Dummy : 'a. ([>`Dummy of 'a], 'a) lab = {_pack=(fun a -> `Dummy(a))}
+let msg_Yes : 'a. ([>`Yes of 'a], 'a) lab = {_pack=(fun a -> `Yes(a))}
+let msg_No : 'a. ([>`No of 'a], 'a) lab = {_pack=(fun a -> `No(a))}
+let msg_Payment : 'a. ([>`Payment of 'a], 'a) lab = {_pack=(fun a -> `Payment(a))}
+let msg_Ack : 'a. ([>`Ack of 'a], 'a) lab = {_pack=(fun a -> `Ack(a))}
+let msg_Bye : 'a. ([>`Bye of 'a], 'a) lab = {_pack=(fun a -> `Bye(a))}
+
+let role_agent : [`A] role = __mkrole "booking_A"
+let role_client : [`C] role = __mkrole "booking_C"
+let role_server : [`S] role = __mkrole "booking_S"
 
 let connect_C : 'pre 'post. booking channel -> bindto:(empty, booking_C sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
   __connect ~myname:"booking_C" ch
 
-let connect_A ch = __connect ~myname:"booking_A" ch
+let connect_A : 'pre 'post. booking channel -> bindto:(empty, booking_A sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+  fun ch ->
+  __connect ~myname:"booking_A" ch
 
-let accept_S ch = __accept ~myname:"booking_S" ~cli_count:2 ch
-
-let _in : 'p -> 'p sess = Obj.magic
+let accept_S : 'pre 'post. booking channel -> bindto:(empty, booking_S sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+  fun ch ->
+  __accept ~myname:"booking_S" ~cli_count:2 ch
                         
 (***************
  ***************)
@@ -59,36 +93,110 @@ let ch = new_channel ()
 
 type 'a ctx = <s : 'a>
 [@@deriving lens]
-
+[@@runner]
+            
 open Syntax.SessionN
 
-let booking_client () =
-  
-  let%slot #s = connect_C ch in
 
-  let rec loop () = 
+let booking_agent () =
+
+  let rec loop state () =
+    __receive s (role_client : 'a)  >>= function
+    | `Query((_:'a),query,p),p' -> begin
+        __set s (p, p') >>
+        
+        let quote = 70 in
+        send s role_client msg_Quote quote >>
+        send s role_server msg_Dummy () >>=
+        loop (Some (query,quote))
+      end
+
+        
+    | `Yes((_:'a),(),p),p' -> begin
+        __set s (p, p') >>
+
+        send s role_server msg_Yes ()
+      end
+
+    | `No((_:'a),(),p),p' -> begin
+        __set s (p, p') >>
+
+        send s role_server msg_No ()
+      end
+  in
+  loop None () >>
+  __receive s (role_client:'a2) >>= fun (`Bye((_:'a2),(),p),p') ->
+  __set s (p, p') >>
+  close s
     
-    send s role_agent msg_Query "from London to Paris, 10th July 2017" >>
+let booking_client () =
+  send s role_agent msg_Query "from London to Paris, 10th July 2017" >>
   
-    let%msg `Quote(price) = recv s role_agent
-    in
-    (* __receive s role_agent >>= fun (`Quote(_,price,p)) -> *)
-    (* __set s (_in p) >> *)
-  
+  __receive s (role_agent:'a) >>= fun (`Quote((_:'a),price,p),p') ->
+  __set s (p, p') >>
+
+  (Printf.printf "client: price received: %d" price; return ()) >>
+
+  begin
     if price < 100 then
       begin
         send s role_agent msg_Yes () >>
         send s role_server msg_Payment "123-4567, Nishi-ku, Nagoya, Japan" >>
           
-        let%msg `Ack() = recv s role_agent
-        in
-        return ()
-        (* __receive s role_agent >>= fun (`Ack(_,(),p)) -> *)
-        (* __set s (_in p) *)
+        __receive s (role_server:'a2) >>= fun (`Ack((_:'a2),(),p),p') ->
+        __set s (p, p')
       end
-    else
+    else begin
       send s role_agent msg_No ()
+    end
+  end >>
+  send s role_agent msg_Bye () >>
+  close s
+      
+
+let booking_server () =
+
+  let rec loop () =
+    __receive s (role_agent:'a) >>= function
+    | `Dummy((_:'a),(),p),p' ->
+       __set s (p, p') >>=
+       loop
+      
+    | `Yes((_:'a),(),p),p' ->
+       __set s (p, p') >>
+
+       __receive s (role_client:'a2) >>= fun (`Payment((_:'a2),address,p),p') ->
+       __set s (p, p') >>
+
+       send s role_client msg_Ack ()
+      
+    | `No((_:'a),(),p),p' ->
+       __set s (p, p')
   in
   loop () >>
-  send s role_agent msg_Bye ()
-      
+  close s
+
+let fork name f () =
+  Thread.create (fun () -> print_endline (name ^ ": started."); f (); print_endline (name ^ ": finished.")) ()
+  
+let _ =
+  let t1 = fork "client" (
+      run_ctx begin fun () ->
+          let%slot #s = connect_C ch in
+          booking_client ()
+        end) () in
+  let t2 = fork "agent" (
+      run_ctx begin fun () ->
+          let%slot #s = connect_A ch in
+          booking_agent ()
+        end) () in
+  print_endline "server started.";
+  run_ctx begin fun () ->
+      let%slot #s = accept_S ch in
+      booking_server ()
+    end ();
+  print_endline "server finished.";
+  Thread.join t1;
+  Thread.join t2;
+  ()
+  

@@ -203,14 +203,14 @@ let runner ({ ptype_loc = loc } as type_decl) =
         {pcf_desc =
            Pcf_method ({txt=fname;loc=Location.none},
                        Public,
-                       Cfk_concrete(Fresh, [%expr Session.Empty]));
+                       Cfk_concrete(Fresh, [%expr Multiparty.Empty]));
          pcf_loc = Location.none;
          pcf_attributes = []}
       in
       Exp.object_ {pcstr_self = Pat.any (); pcstr_fields = List.map meth labels}
     in
     let mkfun = Exp.fun_ Label.nolabel None in
-    let runner = mkfun (pvar "x") (app [%expr Session._run_internal] [obj; evar "x"]) in
+    let runner = mkfun (pvar "x") (app [%expr Multiparty._run_internal] [obj; evar "x"]) in
     let quoter = Ppx_deriving.create_quoter () in
     let varname = "run_" ^ name in
     [{pstr_desc = Pstr_value (Nonrecursive, [Vb.mk (pvar varname) (Ppx_deriving.sanitize ~quoter runner)]); pstr_loc = Location.none}]

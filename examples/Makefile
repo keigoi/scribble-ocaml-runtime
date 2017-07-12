@@ -3,12 +3,15 @@ OCAMLOPT=ocamlfind ocamlc -thread -package session-ocaml -rectypes -short-paths
 OCAMLMKTOP=ocamlfind ocamlmktop -thread -package session-ocaml -rectypes
 OCAMLDEP=ocamlfind ocamldep -package session-ocaml
 
-EXAMPLES=ex_single1 ex_single2 ex_multi1 ex_multi2 travel_agency smtp
+EXAMPLES=multiparty_example
 
 EXAMPLES_BYTE = $(EXAMPLES:%=%.byte)
 
 
 all: $(EXAMPLES_BYTE)
+
+multiparty_example.byte: booking.cmo multiparty_example.cmo
+	$(OCAMLC) -linkpkg -o $@ $^
 
 ex_single2.byte: ex_single1.cmo ex_single2.cmo
 	$(OCAMLC) -linkpkg -o $@ $^

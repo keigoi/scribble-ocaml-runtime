@@ -2,6 +2,7 @@
 open Multiparty
 [%%s_syntax_rebind (module Multiparty.Syntax) ]   
 
+(* declare a single slot 's' *)
 type 'a ctx = <s : 'a>
 [@@deriving lens]
 [@@runner]
@@ -11,6 +12,8 @@ let ch = new_channel ()
 open Booking
 
 let booking_agent () =
+  (* bind an agent's session to the slot s *)
+  let%slot #s = connect_A ch in
 
   let rec loop state () =
     match%branch s role_C with
@@ -30,6 +33,8 @@ let booking_agent () =
   close s
 
 let booking_client () =
+  let%slot #s = connect_C ch in
+  
   send s role_A msg_Query "from London to Paris, 10th July 2017" >>
   
   match%branch s role_A with `Quote(price) ->
@@ -52,6 +57,7 @@ let booking_client () =
       
 
 let booking_server () =
+  let%slot #s = accept_S ch in
 
   let rec loop () =
     match%branch s role_A with
@@ -70,21 +76,10 @@ let fork name f () =
   Thread.create (fun () -> print_endline (name ^ ": started."); f (); print_endline (name ^ ": finished.")) ()
   
 let _ =
-  let t1 = fork "client" (
-      run_ctx begin fun () ->
-          let%slot #s = connect_C ch in
-          booking_client ()
-        end) () in
-  let t2 = fork "agent" (
-      run_ctx begin fun () ->
-          let%slot #s = connect_A ch in
-          booking_agent ()
-        end) () in
+  let t1 = fork "client" (run_ctx booking_client) () in
+  let t2 = fork "agent" (run_ctx booking_agent) () in
   print_endline "server started.";
-  run_ctx begin fun () ->
-      let%slot #s = accept_S ch in
-      booking_server ()
-    end ();
+  run_ctx booking_server ();
   print_endline "server finished.";
   Thread.join t1;
   Thread.join t2;

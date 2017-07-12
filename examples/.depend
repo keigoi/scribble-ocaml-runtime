@@ -1,13 +1,20 @@
+ex_multi2.cmi :
 __working.cmo :
 __working.cmx :
+booking.cmo :
+booking.cmx :
+booking_example.cmo : booking.cmo
+booking_example.cmx : booking.cmx
 ex_multi1.cmo : ex_single2.cmo
 ex_multi1.cmx : ex_single2.cmx
+ex_multi2.cmo : ex_multi2.cmi
+ex_multi2.cmx : ex_multi2.cmi
 ex_single1.cmo :
 ex_single1.cmx :
-ex_single2.cmo : ex_single1.cmo
-ex_single2.cmx : ex_single1.cmx
-test.cmo : ex_single2.cmo
-test.cmx : ex_single2.cmx
+ex_single2.cmo :
+ex_single2.cmx :
+smtp.cmo :
+smtp.cmx :
 travel_agency.cmo :
 travel_agency.cmx :
 travel_agency_.cmo :

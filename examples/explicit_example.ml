@@ -43,9 +43,9 @@ and p2_C_1 =
         [`msg of [`A] role * unit *
           p2_C_1]]]]
 
-let role_A : [`A] role = __mkrole "p2_A"
-let role_B : [`B] role = __mkrole "p2_B"
-let role_C : [`C] role = __mkrole "p2_C"
+let role_A : [`A] role = Internal.__mkrole "p2_A"
+let role_B : [`B] role = Internal.__mkrole "p2_B"
+let role_C : [`C] role = Internal.__mkrole "p2_C"
 
 let msg__1 = {_pack=(fun a -> `_1(a))}
 let msg__2 = {_pack=(fun a -> `_2(a))}
@@ -53,15 +53,17 @@ let msg__3 = {_pack=(fun a -> `_3(a))}
 let msg_none = {_pack=(fun a -> `msg(a))}
    
 let initiate_A : 'pre 'post. (p2,[`ConnectLater]) channel -> bindto:(empty,p2_A sess,'pre,'post) slot -> ('pre,'post,unit) monad = fun ch ~bindto ->
-  Multiparty.__initiate ~myname:"p2_A" ch ~bindto
+  Internal.__initiate ~myname:"p2_A" ch ~bindto
 
 let initiate_B : 'pre 'post. (p2,[`ConnectLater]) channel -> bindto:(empty,p2_B sess,'pre,'post) slot -> ('pre,'post,unit) monad = fun ch ~bindto ->
-  Multiparty.__initiate ~myname:"p2_B" ch ~bindto
+  Internal.__initiate ~myname:"p2_B" ch ~bindto
 
 let initiate_C : 'pre 'post. (p2,[`ConnectLater]) channel -> bindto:(empty,p2_C sess,'pre,'post) slot -> ('pre,'post,unit) monad = fun ch ~bindto ->
-  Multiparty.__initiate ~myname:"p2_C" ch ~bindto
+  Internal.__initiate ~myname:"p2_C" ch ~bindto
 
-let ch = new_connect_later_channel ["p2_A";"p2_B";"p2_C"]
+let new_channel_p2 () = Internal.__new_connect_later_channel ["p2_A";"p2_B";"p2_C"]
+
+let ch = new_channel_p2 ()
 
 let proc_a () =
   let%slot #s = initiate_A ch in

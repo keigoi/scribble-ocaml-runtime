@@ -21,7 +21,7 @@ type ('br, 'payload) lab = {_pack: 'payload -> 'br}
 let __mkrole s = s
 
 let new_channel = MChan.create_connect_first
-let new_connect_later_channel roles = MChan.create_connect_later roles
+let __new_connect_later_channel roles = MChan.create_connect_later roles
 
 let __initiate : 'pre 'post. myname:string -> [`ConnectLater] MChan.shared -> bindto:(empty,'p sess,'pre,'post) slot -> ('pre,'post,unit) monad =
   fun ~myname ch ~bindto:(get,put) pre ->
@@ -99,6 +99,15 @@ let close
   let s = match get pre with MChan s -> s | Dummy -> failwith "no session -- malformed ppx?? @ close" in
   print_endline (MChan.myname s ^ ": close");
   put pre Empty, ()
+
+module Internal = struct
+  let __new_connect_later_channel =  __new_connect_later_channel
+  let __mkrole = __mkrole
+  let __initiate = __initiate
+  let __connect = __connect
+  let __accept = __accept
+end
+
 
 module Syntax = struct
   let (>>=) = (>>=)

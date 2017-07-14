@@ -56,20 +56,20 @@ and booking_S_1 =
 and _EndState = 
   [`close]
 
-let role_C : [`C] role = __mkrole "booking_C"
-let role_A : [`A] role = __mkrole "booking_A"
-let role_S : [`S] role = __mkrole "booking_S"
+let role_C : [`C] role = Internal.__mkrole "booking_C"
+let role_A : [`A] role = Internal.__mkrole "booking_A"
+let role_S : [`S] role = Internal.__mkrole "booking_S"
 
 let accept_S : 'pre 'post. (booking,[`ConnectFirst]) channel -> bindto:(empty, booking_S sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  __accept ~myname:"booking_S" ~cli_count:2 ch
+  Internal.__accept ~myname:"booking_S" ~cli_count:2 ch
 
 let connect_C : 'pre 'post. (booking,[`ConnectFirst]) channel -> bindto:(empty, booking_C sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  __connect ~myname:"booking_C" ch
+  Internal.__connect ~myname:"booking_C" ch
 let connect_A : 'pre 'post. (booking,[`ConnectFirst]) channel -> bindto:(empty, booking_A sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  __connect ~myname:"booking_A" ch
+  Internal.__connect ~myname:"booking_A" ch
 
 let msg_Quote = {_pack=(fun a -> `Quote(a))}
 let msg_No = {_pack=(fun a -> `No(a))}

@@ -16,28 +16,6 @@ type empty = Empty
 type ('p,'q,'pre,'post) slot = ('pre -> 'p) * ('pre -> 'q -> 'post)
 
 val new_channel : unit -> ('g,[`ConnectFirst]) channel
-val new_connect_later_channel : string list -> ('g,[`ConnectLater]) channel
-
-val __mkrole : string -> 'a role
-
-val __initiate :
-  myname:string ->
-  ('g,[`ConnectLater]) channel ->
-  bindto:(empty, 'p sess, 'pre, 'post) slot ->
-  ('pre, 'post, unit) monad
-
-val __connect :
-  myname:string ->
-  ('g,[`ConnectFirst]) channel ->
-  bindto:(empty, 'p sess, 'pre, 'post) slot ->
-  ('pre, 'post, unit) monad
-
-val __accept :
-  myname:string ->
-  cli_count:int ->
-  ('g,[`ConnectFirst]) channel ->
-  bindto:(empty, 'p sess, 'pre, 'post) slot ->
-  ('pre, 'post, unit) monad
 
 val connect :
   ([ `connect of 'br ] sess, 'p sess, 'pre, 'post) slot ->
@@ -58,6 +36,31 @@ val send :
 val close :
   ([ `close ] sess, empty, 'pre, 'post) slot ->
   ('pre, 'post, unit) monad
+
+module Internal : sig
+  val __new_connect_later_channel : string list -> ('g,[`ConnectLater]) channel
+  
+  val __mkrole : string -> 'a role
+  
+  val __initiate :
+    myname:string ->
+    ('g,[`ConnectLater]) channel ->
+    bindto:(empty, 'p sess, 'pre, 'post) slot ->
+    ('pre, 'post, unit) monad
+  
+  val __connect :
+    myname:string ->
+    ('g,[`ConnectFirst]) channel ->
+    bindto:(empty, 'p sess, 'pre, 'post) slot ->
+    ('pre, 'post, unit) monad
+  
+  val __accept :
+    myname:string ->
+    cli_count:int ->
+    ('g,[`ConnectFirst]) channel ->
+    bindto:(empty, 'p sess, 'pre, 'post) slot ->
+    ('pre, 'post, unit) monad
+end
 
 module Syntax : sig
   val (>>=) : ('pre, 'mid, 'a) monad -> ('a -> ('mid, 'post, 'b) monad) -> ('pre, 'post, 'b) monad

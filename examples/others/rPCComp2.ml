@@ -54,7 +54,7 @@ let connect_S3 : 'pre 'post. (rPCComp2,[`ConnectFirst]) channel -> bindto:(empty
   fun ch ->
   Internal.__connect ~myname:"rPCComp2_S3" ch
 
-let new_channel_rPCComp2 : unit -> (rPCComp2,[`ConnectLater]) channel = new_channel
+let new_channel_rPCComp2 : unit -> (rPCComp2,[`ConnectFirst]) channel = new_channel
 let msg_1a = {_pack=(fun a -> `_1a(a))}
 let msg_1 = {_pack=(fun a -> `_1(a))}
 let msg_2 = {_pack=(fun a -> `_2(a))}

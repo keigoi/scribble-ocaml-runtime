@@ -4,10 +4,12 @@
 open Multiparty
 type adder
 
+type integer = int
+
 type adder_C = adder_C_1
 and adder_C_1 = 
   [`send of
-    [`Add of [`S] role * integer,integer *
+    [`Add of [`S] role * (integer * integer) *
       [`recv of [`Res of [`S] role * integer *
         adder_C_1]]
     |`Bye of [`S] role * unit *
@@ -16,7 +18,7 @@ and adder_C_1 =
 type adder_S = adder_S_1
 and adder_S_1 = 
   [`recv of
-    [`Add of [`C] role * integer,integer *
+    [`Add of [`C] role * (integer*integer) *
       [`send of
         [`Res of [`C] role * integer *
           adder_S_1]]
@@ -36,7 +38,7 @@ let connect_S : 'pre 'post. (adder,[`ConnectFirst]) channel -> bindto:(empty, ad
   fun ch ->
   Internal.__connect ~myname:"adder_S" ch
 
-let new_channel_adder : unit -> (adder,[`ConnectLater]) channel = new_channel
+let new_channel_adder : unit -> (adder,[`ConnectFirst]) channel = new_channel
 let msg_Add = {_pack=(fun a -> `Add(a))}
 let msg_Res = {_pack=(fun a -> `Res(a))}
 let msg_Bye = {_pack=(fun a -> `Bye(a))}

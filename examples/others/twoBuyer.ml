@@ -3,7 +3,7 @@
  * https://github.com/keigoi/session-ocaml/tree/multiparty *)
 open Multiparty
 type twoBuyer
-
+type date = int
 type twoBuyer_A = twoBuyer_A_1
 and twoBuyer_A_1 = 
   [`send of
@@ -60,7 +60,7 @@ let connect_S : 'pre 'post. (twoBuyer,[`ConnectFirst]) channel -> bindto:(empty,
   fun ch ->
   Internal.__connect ~myname:"twoBuyer_S" ch
 
-let new_channel_twoBuyer : unit -> (twoBuyer,[`ConnectLater]) channel = new_channel
+let new_channel_twoBuyer : unit -> (twoBuyer,[`ConnectFirst]) channel = new_channel
 let msg_none = {_pack=(fun a -> `msg(a))}
 let msg_quit = {_pack=(fun a -> `quit(a))}
 let msg_ok = {_pack=(fun a -> `ok(a))}

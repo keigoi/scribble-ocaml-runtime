@@ -64,7 +64,7 @@ let connect_C : 'pre 'post. (smtp,[`ConnectFirst]) channel -> bindto:(empty, smt
   fun ch ->
   Internal.__connect ~myname:"smtp_C" ch
 
-let new_channel_smtp : unit -> (smtp,[`ConnectLater]) channel = new_channel
+let new_channel_smtp : unit -> (smtp,[`ConnectFirst]) channel = new_channel
 let msg_220 = {_pack=(fun a -> `_220(a))}
 let msg_250d = {_pack=(fun a -> `_250d(a))}
 let msg_Ehlo = {_pack=(fun a -> `Ehlo(a))}

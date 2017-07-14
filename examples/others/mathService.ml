@@ -44,7 +44,7 @@ let connect_S : 'pre 'post. (mathService,[`ConnectFirst]) channel -> bindto:(emp
   fun ch ->
   Internal.__connect ~myname:"mathService_S" ch
 
-let new_channel_mathService : unit -> (mathService,[`ConnectLater]) channel = new_channel
+let new_channel_mathService : unit -> (mathService,[`ConnectFirst]) channel = new_channel
 let msg_Val = {_pack=(fun a -> `Val(a))}
 let msg_Add = {_pack=(fun a -> `Add(a))}
 let msg_Prod = {_pack=(fun a -> `Prod(a))}

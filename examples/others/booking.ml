@@ -69,7 +69,7 @@ let connect_S : 'pre 'post. (booking,[`ConnectFirst]) channel -> bindto:(empty, 
   fun ch ->
   Internal.__connect ~myname:"booking_S" ch
 
-let new_channel_booking : unit -> (booking,[`ConnectLater]) channel = new_channel
+let new_channel_booking : unit -> (booking,[`ConnectFirst]) channel = new_channel
 let msg_Quote = {_pack=(fun a -> `Quote(a))}
 let msg_No = {_pack=(fun a -> `No(a))}
 let msg_Payment = {_pack=(fun a -> `Payment(a))}

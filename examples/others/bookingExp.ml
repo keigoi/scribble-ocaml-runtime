@@ -6,8 +6,8 @@ type bookingExp
 
 type bookingExp_C = bookingExp_C_1
 and bookingExp_C_1 = 
-  [`connect of
-    [`msg of [`A] role * unit *
+  [`send of
+    [`msg of [`A] role connect * unit *
       bookingExp_C_2]]
 and bookingExp_C_2 = 
   [`send of
@@ -39,8 +39,8 @@ and bookingExp_A_2 =
         [`Quote of [`C] role * int *
           bookingExp_A_2]]
     |`Yes of [`C] role * unit *
-      [`connect of
-        [`msg of [`S] role * unit *
+      [`send of
+        [`msg of [`S] role connect * unit *
           [`send of
             [`Yes of [`S] role * unit *
               bookingExp_A_3]]]]
@@ -54,8 +54,8 @@ and bookingExp_S_1 =
   [`accept of
     [`msg of [`A] role * unit *
       [`recv of [`Yes of [`A] role * unit *
-        [`connect of
-          [`msg of [`C] role * unit *
+        [`send of
+          [`msg of [`C] role connect * unit *
             [`recv of [`Payment of [`C] role * string *
               [`send of
                 [`Ack of [`C] role * unit *

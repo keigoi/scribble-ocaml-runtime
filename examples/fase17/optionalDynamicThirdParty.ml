@@ -6,8 +6,8 @@ type optionalDynamicThirdParty
 
 type optionalDynamicThirdParty_A = optionalDynamicThirdParty_A_1
 and optionalDynamicThirdParty_A_1 = 
-  [`connect of
-    [`hello of [`B] role * unit *
+  [`send of
+    [`hello of [`B] role connect * unit *
       [`recv of [`goodday of [`B] role * unit *
         [`send of
           [`opt1 of [`B] role * unit *
@@ -22,8 +22,8 @@ and optionalDynamicThirdParty_B_1 =
         [`goodday of [`A] role * unit *
           [`recv of
             [`opt1 of [`A] role * unit *
-              [`connect of
-                [`greetings of [`C] role * unit *
+              [`send of
+                [`greetings of [`C] role connect * unit *
                   [`close]]]
             |`opt2 of [`A] role * unit *
               [`close]]]]]]]

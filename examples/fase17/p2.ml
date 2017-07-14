@@ -6,12 +6,12 @@ type p2
 
 type p2_A = p2_A_1
 and p2_A_1 = 
-  [`connect of
-    [`_1 of [`B] role * unit *
+  [`send of
+    [`_1 of [`B] role connect * unit *
       [`disconnect of
         [`msg of [`B] role * unit *
           p2_A_1]]
-    |`_2 of [`C] role * unit *
+    |`_2 of [`C] role connect * unit *
       [`disconnect of
         [`msg of [`C] role * unit *
           p2_A_1]]]]

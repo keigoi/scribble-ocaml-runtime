@@ -8,8 +8,8 @@ type str = string
 
 type travel_C = travel_C_1
 and travel_C_1 = 
-  [`connect of
-    [`msg of [`A] role * unit *
+  [`send of
+    [`msg of [`A] role connect * unit *
       travel_C_2]]
 and travel_C_2 = 
   [`send of
@@ -18,8 +18,8 @@ and travel_C_2 =
         travel_C_2]]
     |`accpt of [`A] role * unit *
       [`recv of [`port of [`A] role * int *
-        [`connect of
-          [`msg of [`S] role * unit *
+        [`send of
+          [`msg of [`S] role connect * unit *
             [`send of
               [`pay of [`S] role * str *
                 [`recv of [`confirm of [`S] role * int *
@@ -40,8 +40,8 @@ and travel_A_2 =
         [`quote of [`C] role * int *
           travel_A_2]]
     |`accpt of [`C] role * unit *
-      [`connect of
-        [`msg of [`S] role * unit *
+      [`send of
+        [`msg of [`S] role connect * unit *
           [`recv of [`port of [`S] role * int *
             [`send of
               [`port of [`C] role * int *

@@ -1,0 +1,43 @@
+//$ bin/scribblec-f17.sh scribble-f17/src/test/scrib/f17/travel/shchan/Travel3.scr -f17 Travel
+
+
+module f17.travel.shchan.Travel3;
+
+type <java> "java.lang.String" from "rt.jar" as Str;
+type <java> "java.lang.Integer" from "rt.jar" as Int;
+
+
+// Annotiations and API gen for a restricted ("linear") form of shared channel passing
+explicit global protocol Travel(role C, role A, role S)
+{
+	connect C to A;
+	do Nego(C, A, S);
+}
+
+aux global protocol Nego(role C, role A, role S)
+{
+	choice at C
+	{
+		query(Str) from C to A;
+		quote(Int) from A to C;
+		do Nego(C, A, S);
+	}
+	or
+	{
+		accpt() from C to A;
+		connect A to S;
+
+		port(p:Int) from S to A; @"open=C"  // p is a port opened by S for C  // FIXME: "open=p:C"
+		port(p) from A to C;                // A passes p to C
+		connect C to S; @"port=p"	          // C connects to port p at S
+		pay(Str) from C to S;
+
+		pay(Str) from C to S;
+		confirm(Int) from S to C;
+		ack(Int) from C to A;  // accpt(Int) refactored as ack
+	}
+	or
+	{
+		reject() from C to A;
+	}
+}

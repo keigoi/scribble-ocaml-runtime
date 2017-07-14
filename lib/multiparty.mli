@@ -1,4 +1,4 @@
-type 'g channel
+type ('g,'c) channel
 type 'p sess
 type 'r role
 type ('br, 'payload) lab = {
@@ -15,22 +15,37 @@ val _run_internal : 'a -> ('b -> ('a, 'a, 'c) monad) -> 'b -> 'c
 type empty = Empty
 type ('p,'q,'pre,'post) slot = ('pre -> 'p) * ('pre -> 'q -> 'post)
 
-val new_channel : unit -> 'g channel
+val new_channel : unit -> ('g,[`ConnectFirst]) channel
+val new_connect_later_channel : unit -> ('g,[`ConnectLater]) channel
 
 val __mkrole : string -> 'a role
 
+val __initiate :
+  myname:string ->
+  ('g,[`ConnectLater]) channel ->
+  bindto:(empty, 'p sess, 'pre, 'post) slot ->
+  ('pre, 'post, unit) monad
+
 val __connect :
   myname:string ->
-  'g channel ->
+  ('g,[`ConnectFirst]) channel ->
   bindto:(empty, 'p sess, 'pre, 'post) slot ->
   ('pre, 'post, unit) monad
 
 val __accept :
   myname:string ->
   cli_count:int ->
-  'g channel ->
+  ('g,[`ConnectFirst]) channel ->
   bindto:(empty, 'p sess, 'pre, 'post) slot ->
   ('pre, 'post, unit) monad
+
+val connect :
+  ([ `connect of 'br ] sess, 'p sess, 'pre, 'post) slot ->
+  'dir role -> ('br, 'dir role * 'v * 'p) lab -> 'v -> ('pre, 'post, unit) monad
+
+val disconnect :
+  ([ `disconnect of 'br ] sess, 'p sess, 'pre, 'post) slot ->
+  'dir role -> ('br, 'dir role * unit * 'p) lab -> unit -> ('pre, 'post, unit) monad
 
 val send :
   ([ `send of 'br ] sess, 'p sess, 'pre, 'post) slot ->
@@ -56,7 +71,11 @@ module Syntax : sig
         :  (empty, 'p sess, 'pre, 'post) slot
            -> 'p * _raw_sess
            -> ('pre, 'post, unit) monad
-  end
+
+    val __accept_receive
+        :  ([`accept of 'br] sess, empty, 'pre, 'post) slot
+           -> 'dir role
+           -> ('pre, 'post, 'br * _raw_sess) monad  end
 end    
 
 (* val agent : [ `A ] role *)

@@ -60,14 +60,14 @@ let role_C : [`C] role = __mkrole "booking_C"
 let role_A : [`A] role = __mkrole "booking_A"
 let role_S : [`S] role = __mkrole "booking_S"
 
-let accept_S : 'pre 'post. booking channel -> bindto:(empty, booking_S sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let accept_S : 'pre 'post. (booking,[`ConnectFirst]) channel -> bindto:(empty, booking_S sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
   __accept ~myname:"booking_S" ~cli_count:2 ch
 
-let connect_C : 'pre 'post. booking channel -> bindto:(empty, booking_C sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let connect_C : 'pre 'post. (booking,[`ConnectFirst]) channel -> bindto:(empty, booking_C sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
   __connect ~myname:"booking_C" ch
-let connect_A : 'pre 'post. booking channel -> bindto:(empty, booking_A sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let connect_A : 'pre 'post. (booking,[`ConnectFirst]) channel -> bindto:(empty, booking_A sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
   __connect ~myname:"booking_A" ch
 

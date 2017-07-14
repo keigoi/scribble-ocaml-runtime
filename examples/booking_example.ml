@@ -16,7 +16,7 @@ let booking_agent () =
   let%slot #s = connect_A ch in
 
   let rec loop state () =
-    match%branch s role_C with
+    match%label receive s role_C with
     | `Query((query:string)) -> begin
         
         let quote = 70 in
@@ -29,7 +29,7 @@ let booking_agent () =
   in
   loop None ()
   >>
-  match%branch s role_C with `Bye() ->
+  match%label receive s role_C with `Bye() ->
   close s
 
 let booking_client () =
@@ -37,7 +37,7 @@ let booking_client () =
   
   send s role_A msg_Query "from London to Paris, 10th July 2017" >>
   
-  match%branch s role_A with `Quote(price) ->
+  match%label receive s role_A with `Quote(price) ->
   (Printf.printf "client: price received: %d" price; return ()) >>
 
   begin
@@ -45,7 +45,7 @@ let booking_client () =
       begin
         send s role_A msg_Yes () >>
         send s role_S msg_Payment "123-4567, Nishi-ku, Nagoya, Japan" >>
-        match%branch s role_S with (`Ack()) ->
+        match%label receive s role_S with (`Ack()) ->
         return ()
       end
     else begin
@@ -60,10 +60,10 @@ let booking_server () =
   let%slot #s = accept_S ch in
 
   let rec loop () =
-    match%branch s role_A with
+    match%label receive s role_A with
     | `Dummy() -> loop ()
     | `Yes() -> begin
-        match%branch s role_C with
+        match%label receive s role_C with
         | `Payment(address) ->
            send s role_C msg_Ack ()
       end

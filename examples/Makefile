@@ -3,7 +3,7 @@ OCAMLOPT=ocamlfind ocamlc -thread -package session-ocaml -rectypes -short-paths
 OCAMLMKTOP=ocamlfind ocamlmktop -thread -package session-ocaml -rectypes
 OCAMLDEP=ocamlfind ocamldep -package session-ocaml
 
-EXAMPLES=booking_example
+EXAMPLES=booking_example explicit_example
 
 EXAMPLES_BYTE = $(EXAMPLES:%=%.byte)
 

@@ -1,7 +1,7 @@
 open Ast_helper
 open Asttypes
 open Parsetree
-(* open Longident *)
+open Longident
 open Ast_convenience
 
 let newname prefix i =
@@ -67,10 +67,8 @@ let slot_bind bindings expr =
   | `labN((_:'a),p,q),r -> __set e00 (q,r) >> eN)
   : [`lab1 of 'x * 'v1 * 'p1 | .. | `labN of 'x * 'vN * 'pN] -> 'b)
 *)
-let session_branch_clauses which cases typvar_dir =
-  let branch_exp =
-    match which with
-    | `SessionN(e00) -> [%expr [%e longident (!root_module ^ ".SessionN.__set")] [%e e00]]
+let session_branch_clauses e_slot cases typvar_dir =
+  let branch_exp = [%expr [%e longident (!root_module ^ ".SessionN.__set")] [%e e_slot]]
   in
   let conv = function
     | {pc_lhs={ppat_desc=Ppat_variant(labl,Some(pat));ppat_loc;ppat_attributes};pc_guard;pc_rhs=rhs_orig} ->
@@ -84,8 +82,7 @@ let session_branch_clauses which cases typvar_dir =
   in
   List.split (List.map conv cases)
 
-let branch_func_name = function
-  | `SessionN -> longident (!root_module ^ ".SessionN.__receive")
+let branch_func_name funname = longident (!root_module ^ ".SessionN.__"^funname)
 
 let make_branch_func_types labls =
   let open Typ in
@@ -126,17 +123,17 @@ let expression_mapper id mapper exp attrs =
      | `labN((_:'a),p,q),r -> __set e00 (q,r) >> eN)
      : [`lab1 of 'p1 | .. | `labN of 'pN] * 'a -> 'b)
   *)
-  | "branch", Pexp_match ({pexp_desc=Pexp_apply(e00,[(_,e01)])}, cases) ->
+  | "label", Pexp_match ({pexp_desc=Pexp_apply({pexp_desc=Pexp_ident({txt=Lident funname})},[(_,e_slot);(_,e_dir)])}, cases) ->
      let open Typ in
      let typvar_dir = Typ.var (freshname ()) in
-     let cases, labls = session_branch_clauses (`SessionN e00) cases typvar_dir in
+     let cases, labls = session_branch_clauses e_slot cases typvar_dir in
      let new_typ = make_branch_func_types labls in
      let new_exp =
-       [%expr [%e branch_func_name `SessionN] [%e e00] ([%e e01] : [%t typvar_dir]) >>=
+       [%expr [%e branch_func_name funname] [%e e_slot] ([%e e_dir] : [%t typvar_dir]) >>=
               ([%e Exp.function_ cases] : [%t new_typ ])]
     in
     Some (mapper.Ast_mapper.expr mapper {new_exp with pexp_attributes})
-  | "branch", _ -> error pexp_loc "Invalid content for extension %branch"
+  | "label", _ -> error pexp_loc "Invalid content for extension %label; it must be match%label slot dir receive or match%label accept slot dir"
 
   | _ -> None
 

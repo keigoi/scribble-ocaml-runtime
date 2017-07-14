@@ -13,6 +13,12 @@ ex_single1.cmo :
 ex_single1.cmx :
 ex_single2.cmo :
 ex_single2.cmx :
+explicit_connection.cmo :
+explicit_connection.cmx :
+explicit_connection_example.cmo : explicit_connection.cmo
+explicit_connection_example.cmx : explicit_connection.cmx
+explicit_example.cmo :
+explicit_example.cmx :
 smtp.cmo :
 smtp.cmx :
 travel_agency.cmo :

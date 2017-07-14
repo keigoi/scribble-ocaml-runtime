@@ -3,12 +3,15 @@ OCAMLOPT=ocamlfind ocamlc -thread -package session-ocaml -rectypes -short-paths
 OCAMLMKTOP=ocamlfind ocamlmktop -thread -package session-ocaml -rectypes
 OCAMLDEP=ocamlfind ocamldep -package session-ocaml
 
-EXAMPLES=booking_example explicit_connection_example
+EXAMPLES=booking_example explicit_connection_example fase17/travel_example
 
 EXAMPLES_BYTE = $(EXAMPLES:%=%.byte)
 
 
 all: $(EXAMPLES_BYTE)
+
+fase17/travel_example.byte: fase17/travel.cmo fase17/travel_example.cmo
+	$(OCAMLC) -linkpkg -o $@ $^
 
 explicit_connection_example.byte: explicit_connection.cmo explicit_connection_example.cmo
 	$(OCAMLC) -linkpkg -o $@ $^
@@ -30,7 +33,7 @@ ex_multi1.byte: ex_single1.cmo ex_single2.cmo ex_multi1.cmo
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
-	$(OCAMLC) -c $<
+	$(OCAMLC) -I `dirname $<` -c $<
 
 .mli.cmi:
 	$(OCAMLC) -c $<

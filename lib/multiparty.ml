@@ -16,6 +16,7 @@ type 'p sess = MChan of MChan.t | Dummy
 type _raw_sess = MChan.t
 
 type 'r role = string
+type 'a connect = 'a
 type ('br, 'payload) lab = {_pack: 'payload -> 'br}
 
 let __mkrole s = s
@@ -40,9 +41,9 @@ let __accept : 'pre 'post. myname:string -> cli_count:int -> [`ConnectFirst] MCh
 
 let connect
     : type br dir v p q pre post.
-      ([`connect of br] sess, p sess, pre, post) slot
+      ([`send of br] sess, p sess, pre, post) slot
       -> dir role
-      -> (br, dir role * v * p) lab
+      -> (br, dir role connect * v * p) lab
       -> v
       -> (pre, post, unit) monad
   = fun (get,put) dir {_pack} v pre ->

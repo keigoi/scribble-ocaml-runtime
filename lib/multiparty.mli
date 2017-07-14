@@ -1,6 +1,7 @@
 type ('g,'c) channel
 type 'p sess
 type 'r role
+type 'a connect
 type ('br, 'payload) lab = {
     _pack : 'payload -> 'br
   }
@@ -18,8 +19,8 @@ type ('p,'q,'pre,'post) slot = ('pre -> 'p) * ('pre -> 'q -> 'post)
 val new_channel : unit -> ('g,[`ConnectFirst]) channel
 
 val connect :
-  ([ `connect of 'br ] sess, 'p sess, 'pre, 'post) slot ->
-  'dir role -> ('br, 'dir role * 'v * 'p) lab -> 'v -> ('pre, 'post, unit) monad
+  ([ `send of 'br ] sess, 'p sess, 'pre, 'post) slot ->
+  'dir role -> ('br, 'dir role connect * 'v * 'p) lab -> 'v -> ('pre, 'post, unit) monad
 
 val disconnect :
   ([ `disconnect of 'br ] sess, 'p sess, 'pre, 'post) slot ->

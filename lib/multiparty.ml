@@ -21,7 +21,7 @@ type ('br, 'payload) lab = {_pack: 'payload -> 'br}
 let __mkrole s = s
 
 let new_channel = MChan.create_connect_first
-let new_connect_later_channel = MChan.create_connect_later
+let new_connect_later_channel roles = MChan.create_connect_later roles
 
 let __initiate : 'pre 'post. myname:string -> [`ConnectLater] MChan.shared -> bindto:(empty,'p sess,'pre,'post) slot -> ('pre,'post,unit) monad =
   fun ~myname ch ~bindto:(get,put) pre ->

@@ -15,10 +15,10 @@ end
 module Chan = Channel    
     
 module MChan : sig
-  (* (\* the entry point *\) *)
+  (* the entry point *)
   type 't shared
   val create_connect_first : unit -> [`ConnectFirst] shared
-  val create_connect_later : unit -> [`ConnectLater] shared
+  val create_connect_later : string list -> [`ConnectLater] shared
 
   (* a session channel to communicate with another role *)
   type t
@@ -34,58 +34,63 @@ end = struct
   
   type connect_one = {from_:string; to_:string; connection:UChan.t}
          
-  type _ init =
-     | ConnectAll: string * t Chan.t -> [`ConnectFirst] init
-     | ConnectOne: connect_one -> [`ConnectLater] init
-                   
   (* 'session hash' is a hash table from role id to untyped session chan *)
-   and t = {name: string; sess: (string, UChan.t) Hashtbl.t; connector: [`ConnectLater] shared option}
+  type t = {name: string; sess: (string, UChan.t) Hashtbl.t; connector: [`ConnectLater] shared option}
 
   (* entry point -- shared channel; 
      the payload is the client's id and a typed channel to send bach
      the session hash   *)
-   and 't shared = 't init Chan.t
+   and 't shared =
+     | ConnectFirst: (string * t Chan.t) Chan.t -> [`ConnectFirst] shared
+     | ConnectLater: (string, connect_one Chan.t) Hashtbl.t -> [`ConnectLater] shared
                          
-  let create_connect_first = Chan.create
-  let create_connect_later = Chan.create
+  let create_connect_first () = ConnectFirst (Chan.create ())
+  let create_connect_later names =
+    let hash = Hashtbl.create 42 in
+    List.iter (fun name -> Hashtbl.add hash name (Chan.create ())) names;
+    ConnectLater hash
 
-  let initiate (sh: [`ConnectLater] shared) ~myname =
-    {name=myname;sess=Hashtbl.create 42;connector=Some sh}
+  let initiate (hash:[`ConnectLater] shared) ~myname =
+    {name=myname;sess=Hashtbl.create 42;connector=Some hash}
 
   let connect_ongoing {name;sess;connector} ~to_ =
     match connector with
     | None -> failwith "connect_ongoing: explicit connection used in implicit-connection session"
-    | Some connector -> begin
+    | Some (ConnectLater hash) -> begin
+        let connector = Hashtbl.find hash to_ in
         let conn = UChan.create () in
-        Chan.send connector (ConnectOne{from_=name;to_;connection=conn});
+        Chan.send connector {from_=name;to_;connection=conn};
+        assert (not (Hashtbl.mem sess to_));
         Hashtbl.add sess to_ conn
       end
 
   let accept_ongoing {name;sess;connector} ~from_ =
     match connector with
     | None -> failwith (!%"accept_ongoing at %s: explicit connection used in implicit-connection session" name)
-    | Some connector -> begin
-        let ConnectOne {from_=realfrom;to_=realto;connection=conn} = Chan.receive connector in
+    | Some (ConnectLater hash) -> begin
+        let connector = Hashtbl.find hash name in
+        let {from_=realfrom;to_=realto;connection=conn} = Chan.receive connector in
         if from_<>realfrom then begin
             failwith (!%"accept_ongoing at %s: unexpected connection from %s, expected: %s" name from_ realfrom)
           end;
         if name<>realto then begin
             failwith (!%"accept_ongoing at %s: wrong connection from %s, should connect to:%s" name from_ realto)
           end;
+        assert (not (Hashtbl.mem sess from_));
         Hashtbl.add sess from_ conn
       end
 
   let disconnect {name;sess} ~from_ =
     Hashtbl.remove sess from_
      
-  let accept (sh:[`ConnectFirst] shared) ~myname ~cli_count =
+  let accept (ConnectFirst sh) ~myname ~cli_count =
     let me = myname in
 
     (* accept all connections *)
     let rethash = Hashtbl.create 42 in
     let rec gather cnt =
       if cnt > 0 then begin
-        let ConnectAll(rolename,ret) = Chan.receive sh in
+        let rolename,ret = Chan.receive sh in
         Hashtbl.add rethash rolename ret;
         gather (cnt-1)
       end
@@ -134,9 +139,9 @@ end = struct
       ) rethash;
     {name=myname; sess=myhash; connector=None}
 
-  let connect sh ~myname =
+  let connect (ConnectFirst sh) ~myname =
     let ret = Chan.create () in
-    Chan.send sh (ConnectAll(myname,ret));
+    Chan.send sh (myname,ret);
     Chan.receive ret
 
   let myname {name} = name

@@ -16,7 +16,7 @@ type empty = Empty
 type ('p,'q,'pre,'post) slot = ('pre -> 'p) * ('pre -> 'q -> 'post)
 
 val new_channel : unit -> ('g,[`ConnectFirst]) channel
-val new_connect_later_channel : unit -> ('g,[`ConnectLater]) channel
+val new_connect_later_channel : string list -> ('g,[`ConnectLater]) channel
 
 val __mkrole : string -> 'a role
 

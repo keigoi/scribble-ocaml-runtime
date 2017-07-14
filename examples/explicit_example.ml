@@ -61,27 +61,16 @@ let initiate_B : 'pre 'post. (p2,[`ConnectLater]) channel -> bindto:(empty,p2_B 
 let initiate_C : 'pre 'post. (p2,[`ConnectLater]) channel -> bindto:(empty,p2_C sess,'pre,'post) slot -> ('pre,'post,unit) monad = fun ch ~bindto ->
   Multiparty.__initiate ~myname:"p2_C" ch ~bindto
 
-let ch = new_connect_later_channel ()
-
-let proc_c () =
-  let%slot #s = initiate_C ch in
-  let rec loop () =
-    match%label accept_receive s role_A with
-    | `_2() -> begin
-        disconnect s role_A msg_none () >>=
-        loop
-      end
-  in
-  loop ()
+let ch = new_connect_later_channel ["p2_A";"p2_B";"p2_C"]
 
 let proc_a () =
   let%slot #s = initiate_A ch in
   let rec loop () =
-    if true then begin
+    if Random.int 2 <> 0 then begin
         connect s role_B msg__1 () >>
         disconnect s role_B msg_none () >>=
         loop
-      end else if true then begin
+      end else if Random.int 2 <> 0 then begin
         connect s role_C msg__2 () >>
         disconnect s role_C msg_none () >>=
         loop
@@ -108,8 +97,20 @@ let proc_b () =
   in
   loop ()
 
+let proc_c () =
+  let%slot #s = initiate_C ch in
+  let rec loop () =
+    match%label accept_receive s role_A with
+    | `_2() -> begin
+        disconnect s role_A msg_none () >>=
+        loop
+      end
+  in
+  loop ()
+
+
 let () =
   ignore @@ Thread.create (run_ctx proc_b) ();
   ignore @@ Thread.create (run_ctx proc_c) ();
   run_ctx proc_a ()
-  
+

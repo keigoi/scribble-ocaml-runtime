@@ -1,22 +1,27 @@
-open Session
 open Multiparty_base
+open Linocaml
+open Lens
 
-type ('pre,'post,'v) monad = ('pre,'post,'v) Session.monad
+type ('pre,'post,'v) monad = ('pre,'post,'v) Linocaml.monad
+let (>>=) = Linocaml.(>>=)
+let (>>) = Linocaml.(>>)
+let return = Linocaml.return
 
-let return x pre = pre, x
-let (>>=) f g pre = match f pre with mid, x -> g x mid
-let (>>) m n pre = match m pre with mid, x -> n mid
-let _run_internal a f x = snd (f x a)
-
-type empty = Empty
-type ('p,'q,'pre,'post) slot = ('pre -> 'p) * ('pre -> 'q -> 'post)
+type ('a,'b,'pre,'post) slot = ('a,'b,'pre,'post) Lens.t
+type empty = Linocaml.empty
+type 'a data = 'a Linocaml.data
+type 'a lin = 'a Linocaml.lin
 
 type ('g,'c) channel = 'c MChan.shared
-type 'p sess = MChan of MChan.t | Dummy
+type 'p sess_  = MChan of MChan.t | Dummy
+type 'p sess = 'p sess_ lin
+
 type _raw_sess = MChan.t
 
 type 'r role = string
+
 type 'a connect = 'a
+
 type ('br, 'payload) lab = {_pack: 'payload -> 'br}
 
 let __mkrole s = s
@@ -25,81 +30,102 @@ let new_channel = MChan.create_connect_first
 let __new_connect_later_channel roles = MChan.create_connect_later roles
 
 let __initiate : 'pre 'post. myname:string -> [`ConnectLater] MChan.shared -> bindto:(empty,'p sess,'pre,'post) slot -> ('pre,'post,unit) monad =
-  fun ~myname ch ~bindto:(get,put) pre ->
+  fun ~myname ch ~bindto ->
   let s = MChan.initiate ch ~myname in
-  put pre (MChan s), ()
+  Linocaml.set bindto (MChan s)
   
 let __connect : 'pre 'post. myname:string -> [`ConnectFirst] MChan.shared -> bindto:(empty,'p sess,'pre,'post) slot -> ('pre,'post,unit) monad =
-  fun ~myname ch ~bindto:(get,put) pre ->
+  fun ~myname ch ~bindto ->
   let s = MChan.connect ch ~myname in
-  put pre (MChan s), ()
+  Linocaml.set bindto (MChan s)
 
 let __accept : 'pre 'post. myname:string -> cli_count:int -> [`ConnectFirst] MChan.shared -> bindto:(empty,'p sess,'pre,'post) slot -> ('pre,'post,unit) monad =
-  fun ~myname ~cli_count ch ~bindto:(get,put) pre ->
+  fun ~myname ~cli_count ch ~bindto ->
   let s = MChan.accept ch ~myname ~cli_count in
-  put pre (MChan s), ()
-
+  Linocaml.set bindto (MChan s)
+                              
 let connect
     : type br dir v p q pre post.
       ([`send of br] sess, p sess, pre, post) slot
       -> dir role
-      -> (br, dir role connect * v * p) lab
+      -> (br, dir role connect * v data * p sess) lab
       -> v
       -> (pre, post, unit) monad
-  = fun (get,put) dir {_pack} v pre ->
-  let s = match get pre with MChan s -> s | Dummy -> failwith "no session -- malformed ppx expansion?? @ connect" in
-  print_endline (MChan.myname s ^ ": connect to " ^ dir);
-  MChan.connect_ongoing s ~to_:dir; (* explicit connection *)
-  let uc = MChan.get_connection s ~othername:dir in
-  UChan.send uc (_pack (dir,v,Obj.magic Dummy));
-  put pre (MChan s), ()
+  = fun {get;set} dir {_pack} v ->
+  Internal.__monad begin
+      fun pre ->
+      let s = match get pre with Lin__ (MChan s) -> s | Lin__ Dummy -> failwith "no session -- malformed ppx expansion?? @ connect" in
+      print_endline (MChan.myname s ^ ": connect to " ^ dir);
+      MChan.connect_ongoing s ~to_:dir; (* explicit connection *)
+      let uc = MChan.get_connection s ~othername:dir in
+      Unsafe.UChan.send uc (_pack (dir,Data__ v,Lin__ Dummy));
+      set pre (Lin__ (MChan s)), ()
+    end
 
 let disconnect
     : type br dir v p q pre post.
       ([`disconnect of br] sess, p sess, pre, post) slot
       -> dir role
-      -> (br, dir role * unit * p) lab
+      -> (br, dir role * unit * p sess) lab
       -> unit
       -> (pre, post, unit) monad
-  = fun (get,put) dir {_pack} v pre ->
-  let s = match get pre with MChan s -> s | Dummy -> failwith "no session -- malformed ppx expansion?? @ connect" in
-  print_endline (MChan.myname s ^ ": disconnect from " ^ dir);
-  MChan.disconnect s ~from_:dir;
-  put pre (MChan s), ()
+  = fun {get;set} dir {_pack} v ->
+  Internal.__monad begin
+      fun pre ->
+      let s = match get pre with Lin__ (MChan s) -> s | Lin__ Dummy -> failwith "no session -- malformed ppx expansion?? @ connect" in
+      print_endline (MChan.myname s ^ ": disconnect from " ^ dir);
+      MChan.disconnect s ~from_:dir;
+      set pre (Lin__ (MChan s)), ()
+    end
 
+(** invariant: 'br must be [`tag of 'a * 'b * 'c sess] *)
 let send
     : type br dir v p q pre post.
       ([`send of br] sess, p sess, pre, post) slot
       -> dir role
-      -> (br, dir role * v * p) lab
+      -> (br, dir role * v data * p sess) lab
       -> v
       -> (pre, post, unit) monad
-  = fun (get,put) dir {_pack} v pre ->
-  let s = match get pre with MChan s -> s | Dummy -> failwith "no session -- malformed ppx expansion?? @ send" in
-  print_endline (MChan.myname s ^ ": send to " ^ dir);
-  let uc = MChan.get_connection s ~othername:dir in
-  UChan.send uc (_pack (dir,v,Obj.magic Dummy));
-  put pre (MChan s), ()
+  = fun {get;set} dir {_pack} v ->
+  Internal.__monad begin
+      fun pre ->
+      let s = match get pre with (Lin__ (MChan s)) -> s | Lin__ Dummy -> failwith "no session -- malformed ppx expansion?? @ send" in
+      print_endline (MChan.myname s ^ ": send to " ^ dir);
+      let uc = MChan.get_connection s ~othername:dir in
+      (* we put Dummy for 'p sess part since the connection hash should not be shared with the others *)
+      Unsafe.UChan.send uc (_pack (dir,Data__ v,Lin__ Dummy));
+      set pre (Lin__ (MChan s)), ()
+    end
 
-(* let recv *)
-(*     : type br dir v p pre post. *)
-(*       ([`recv of br] sess, p sess, pre, post) slot *)
-(*       -> dir role *)
-(*       -> (br, dir, v, p) lab *)
-(*       -> (pre, post, v) monad = fun (get,put) dir {_pack} pre -> *)
-(*   let s = get pre in *)
-(*   let uc = MChan.get_connection s ~othername:dir in *)
-(*   let msg = UChan.receive uc in *)
-(*   let _, v = Obj.magic msg in (\* FAIL *\) *)
-(*   put pre s, v *)
+(** invariant: 'br must be [`tag of 'a * 'b sess] *)
+let receive
+    :  type br dir p pre xx post v.
+       ([`recv of dir role * br] sess, empty, pre, post) slot
+       -> dir role
+       -> (pre, post, br) lin_match =
+  fun {get;set} dir ->
+  Linocaml.Internal.__match_in2 begin
+      fun pre ->
+      let s = match get pre with Lin__ (MChan s) -> s | Lin__ Dummy -> failwith "no session -- malformed ppx expansion?? @ __receive" in
+      print_endline (MChan.myname s ^ ": receive from " ^ dir);
+      let uc = MChan.get_connection s ~othername:dir in
+      let (br : br)(*polyvar*) = Unsafe.UChan.receive uc in
+      (* we must replace 'p sess part, since the part in payload is Dummy (see send) *)
+      let br = Unsafe.obj_conv_msg br (Lin__ (MChan s)) in
+      print_endline (MChan.myname s ^ ": received");
+      set pre Internal.__empty, Lin__ br
+    end
 
 let close
     : type pre post.
-      ([`close] sess, empty, pre, post) slot -> (pre, post, unit) monad =
-  fun (get,put) pre ->
-  let s = match get pre with MChan s -> s | Dummy -> failwith "no session -- malformed ppx?? @ close" in
-  print_endline (MChan.myname s ^ ": close");
-  put pre Empty, ()
+      ([`close] sess, empty, pre, post) slot -> (pre, post, unit) monad
+  = fun {get;set} ->
+  Internal.__monad begin
+      fun pre ->
+      let s = match get pre with Lin__ (MChan s) -> s | Lin__ Dummy -> failwith "no session -- malformed ppx?? @ close" in
+      print_endline (MChan.myname s ^ ": close");
+      set pre Internal.__empty, ()
+    end
 
 module Internal = struct
   let __new_connect_later_channel =  __new_connect_later_channel
@@ -112,41 +138,31 @@ end
 
 module Syntax = struct
   let (>>=) = (>>=)
-  module SessionN = struct
-    let __receive
-        :  type br dir p pre xx post v.
-           ([`recv of br] sess, empty, pre, post) slot
-           -> dir role
-           -> (pre, post, br * _raw_sess) monad =
-      fun (get,put) dir pre ->
-      let s = match get pre with MChan s -> s | Dummy -> failwith "no session -- malformed ppx expansion?? @ __receive" in
-      print_endline (MChan.myname s ^ ": receive from " ^ dir);
-      let uc = MChan.get_connection s ~othername:dir in
-      let (br : br)(*polyvar*) = UChan.receive uc in
-      print_endline (MChan.myname s ^ ": received");
-      put pre Empty, (br, s)
-    
+  module SessionN = struct    
     let __set
         :  type br p v pre mid post.
            (empty, p sess, pre, post) slot
            -> p * _raw_sess
            -> (pre, post, unit) monad =
-      fun (get,put) (_, p) pre ->
-      put pre (MChan p), ()
+      fun {get;set} (_, p) ->
+      Linocaml.Internal.__monad (fun pre -> set pre (Lin__ (MChan p)), ())
 
     let __accept_receive
         :  type br dir p pre xx post v.
            ([`accept of br] sess, empty, pre, post) slot
            -> dir role
            -> (pre, post, br * _raw_sess) monad =
-      fun (get,put) dir pre ->
-      let s = match get pre with MChan s -> s | Dummy -> failwith "no session -- malformed ppx expansion?? @ __accept" in
-      print_endline (MChan.myname s ^ ": receive from " ^ dir);
-      MChan.accept_ongoing s ~from_:dir;
-      let uc = MChan.get_connection s ~othername:dir in
-      let (br : br)(*polyvar*) = UChan.receive uc in
-      print_endline (MChan.myname s ^ ": received");
-      put pre Empty, (br, s)
+      fun {get;set} dir ->
+      Linocaml.Internal.__monad begin
+          fun pre ->
+          let s = match get pre with Lin__ (MChan s) -> s | Lin__ Dummy -> failwith "no session -- malformed ppx expansion?? @ __accept" in
+          print_endline (MChan.myname s ^ ": receive from " ^ dir);
+          MChan.accept_ongoing s ~from_:dir;
+          let uc = MChan.get_connection s ~othername:dir in
+          let (br : br)(*polyvar*) = Unsafe.UChan.receive uc in
+          print_endline (MChan.myname s ^ ": received");
+          set pre Linocaml.Internal.__empty, (br, s)
+        end
   end
 end
 

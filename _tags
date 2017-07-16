@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 3923bb24fc09d4bf0c8609c84c40bd2a)
+# DO NOT EDIT (digest: a7065cd36f9c2438af6ff81a03b9c12b)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -16,34 +16,20 @@ true: annot, bin_annot
 "_darcs": not_hygienic
 # Library session-ocaml
 "lib/session-ocaml.cmxs": use_session-ocaml
-<lib/session-ocaml.{cma,cmxa}>: oasis_library_session_ocaml_byte
-<lib/*.ml{,i,y}>: oasis_library_session_ocaml_byte
-<lib/session-ocaml.{cma,cmxa}>: oasis_library_session_ocaml_native
-<lib/*.ml{,i,y}>: oasis_library_session_ocaml_native
+<lib/*.ml{,i,y}>: pkg_linocaml
 <lib/*.ml{,i,y}>: pkg_str
 <lib/*.ml{,i,y}>: pkg_threads
-# Library ppx
-"ppx/ppx.cmxs": use_ppx
-# Library ppx_lens
-"ppx/ppx_lens.cmxs": use_ppx_lens
-<ppx/*.ml{,i,y}>: pkg_compiler-libs
-<ppx/*.ml{,i,y}>: pkg_ppx_deriving
-# Executable ppx_session
-<ppx/ppx_session_ex.{native,byte}>: pkg_compiler-libs.common
-<ppx/ppx_session_ex.{native,byte}>: pkg_ppx_deriving.api
-<ppx/ppx_session_ex.{native,byte}>: pkg_ppx_tools.metaquot
-<ppx/*.ml{,i,y}>: pkg_compiler-libs.common
-<ppx/*.ml{,i,y}>: pkg_ppx_deriving.api
-<ppx/*.ml{,i,y}>: pkg_ppx_tools.metaquot
 # Executable test_multiparty
 <tests/test_multiparty_base.{native,byte}>: oasis_executable_test_multiparty_byte
 <tests/*.ml{,i,y}>: oasis_executable_test_multiparty_byte
 <tests/test_multiparty_base.{native,byte}>: oasis_executable_test_multiparty_native
 <tests/*.ml{,i,y}>: oasis_executable_test_multiparty_native
+<tests/test_multiparty_base.{native,byte}>: pkg_linocaml
 <tests/test_multiparty_base.{native,byte}>: pkg_oUnit
 <tests/test_multiparty_base.{native,byte}>: pkg_str
 <tests/test_multiparty_base.{native,byte}>: pkg_threads
 <tests/test_multiparty_base.{native,byte}>: use_session-ocaml
+<tests/*.ml{,i,y}>: pkg_linocaml
 <tests/*.ml{,i,y}>: pkg_oUnit
 <tests/*.ml{,i,y}>: pkg_str
 <tests/*.ml{,i,y}>: pkg_threads

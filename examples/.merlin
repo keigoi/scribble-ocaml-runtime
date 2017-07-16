@@ -1,8 +1,5 @@
-PKG session-ocaml session-ocaml.ppx ppx_deriving session-ocaml.ppx_lens
-FLG -rectypes
-FLG -short-paths
+PKG threads session-ocaml linocaml.ppx linocaml.ppx_lens
 B +threads
-S .
-S ../lib
 
+S .
 B .

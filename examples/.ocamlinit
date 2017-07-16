@@ -5,8 +5,7 @@ let () =
 
 #use "topfind";;
 #thread;;
-#rectypes;;
-#require "session-ocaml.ppx";;
-#require "session-ocaml.ppx_lens";;
+#require "linocaml.ppx";;
+#require "linocaml.ppx_lens";;
 
-open Session;;
+open Multiparty;;

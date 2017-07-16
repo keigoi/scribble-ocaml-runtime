@@ -1,38 +1,47 @@
 type ('g,'c) channel
-type 'p sess
-type 'r role
+
+type 'a data = 'a Linocaml.data
+type 'a lin = 'a Linocaml.lin
+
+type 'p sess_
+type 'p sess = 'p sess_ lin
+
 type 'a connect
+type 'r role
+
 type ('br, 'payload) lab = {
     _pack : 'payload -> 'br
   }
 type _raw_sess
 
-type ('pre,'post,'a) monad
+type ('pre,'post,'a) monad = ('pre,'post,'a) Linocaml.monad
 val return : 'x -> ('p, 'p, 'x) monad
 val (>>=) : ('pre, 'mid, 'a) monad -> ('a -> ('mid, 'post, 'b) monad) -> ('pre, 'post, 'b) monad
-val (>>) : ('pre, 'mid, 'a) monad -> ('mid, 'post, 'b) monad -> ('pre, 'post, 'b) monad
-val _run_internal : 'a -> ('b -> ('a, 'a, 'c) monad) -> 'b -> 'c
+val (>>) : ('pre, 'mid, unit) monad -> ('mid, 'post, 'b) monad -> ('pre, 'post, 'b) monad
 
-type empty = Empty
-type ('p,'q,'pre,'post) slot = ('pre -> 'p) * ('pre -> 'q -> 'post)
+type ('a,'b,'pre,'post) slot = ('a,'b,'pre,'post) Lens.t
+type empty = Linocaml.empty
 
 val new_channel : unit -> ('g,[`ConnectFirst]) channel
 
 val connect :
   ([ `send of 'br ] sess, 'p sess, 'pre, 'post) slot ->
-  'dir role -> ('br, 'dir role connect * 'v * 'p) lab -> 'v -> ('pre, 'post, unit) monad
+  'dir role -> ('br, 'dir role connect * 'v data * 'p sess) lab -> 'v -> ('pre, 'post, unit) monad
 
 val disconnect :
   ([ `disconnect of 'br ] sess, 'p sess, 'pre, 'post) slot ->
-  'dir role -> ('br, 'dir role * unit * 'p) lab -> unit -> ('pre, 'post, unit) monad
+  'dir role -> ('br, 'dir role * unit * 'p sess) lab -> unit -> ('pre, 'post, unit) monad
 
+(** invariant: 'br must be [`tag of 'a * 'b * 'c sess] *)
 val send :
   ([ `send of 'br ] sess, 'p sess, 'pre, 'post) slot ->
-  'dir role -> ('br, 'dir role * 'v * 'p) lab -> 'v -> ('pre, 'post, unit) monad
+  'dir role -> ('br, 'dir role * 'v data * 'p sess) lab -> 'v -> ('pre, 'post, unit) monad
 
-(* val recv : *)
-(*   ([ `recv of 'br ] sess, 'p sess, 'pre, 'post) slot -> *)
-(*   'dir role -> ('br, 'dir, 'v, 'p) lab -> ('pre, 'post, 'v) monad *)
+(** invariant: 'br must be [`tag of 'a * 'b sess] *)
+val receive :
+  ([`recv of 'dir role * 'br] sess, empty, 'pre, 'post) slot
+  -> 'dir role
+  -> ('pre, 'post, 'br) Linocaml.lin_match
 
 val close :
   ([ `close ] sess, empty, 'pre, 'post) slot ->
@@ -62,25 +71,6 @@ module Internal : sig
     bindto:(empty, 'p sess, 'pre, 'post) slot ->
     ('pre, 'post, unit) monad
 end
-
-module Syntax : sig
-  val (>>=) : ('pre, 'mid, 'a) monad -> ('a -> ('mid, 'post, 'b) monad) -> ('pre, 'post, 'b) monad
-  module SessionN : sig
-    val __receive
-        :  ([`recv of 'br] sess, empty, 'pre, 'post) slot
-           -> 'dir role
-           -> ('pre, 'post, 'br * _raw_sess) monad
-    
-    val __set
-        :  (empty, 'p sess, 'pre, 'post) slot
-           -> 'p * _raw_sess
-           -> ('pre, 'post, unit) monad
-
-    val __accept_receive
-        :  ([`accept of 'br] sess, empty, 'pre, 'post) slot
-           -> 'dir role
-           -> ('pre, 'post, 'br * _raw_sess) monad  end
-end    
 
 (* val agent : [ `A ] role *)
 (* val client : [ `C ] role *)

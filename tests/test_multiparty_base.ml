@@ -1,5 +1,6 @@
 open OUnit
 open Multiparty_base
+module UChan = Unsafe.UChan
    
 let fork (x : 'a) (f : 'a -> unit) : unit = ignore (Thread.create f x)
 

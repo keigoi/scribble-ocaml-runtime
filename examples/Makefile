@@ -1,6 +1,6 @@
-OCAMLC=ocamlfind ocamlc -thread -package session-ocaml,session-ocaml.ppx,session-ocaml.ppx_lens -rectypes -short-paths
-OCAMLOPT=ocamlfind ocamlc -thread -package session-ocaml -rectypes -short-paths
-OCAMLMKTOP=ocamlfind ocamlmktop -thread -package session-ocaml -rectypes
+OCAMLC=ocamlfind ocamlc -thread -package session-ocaml,linocaml,linocaml.ppx,linocaml.ppx_lens -short-paths
+OCAMLOPT=ocamlfind ocamlc -thread -package session-ocaml -short-paths
+OCAMLMKTOP=ocamlfind ocamlmktop -thread -package session-ocaml
 OCAMLDEP=ocamlfind ocamldep -package session-ocaml
 
 EXAMPLES=booking_example explicit_connection_example fase17/travel_example

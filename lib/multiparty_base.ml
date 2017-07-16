@@ -1,17 +1,5 @@
 let (!%) = Printf.sprintf
 
-module UChan : sig (* untyped *)
-  type t
-  val create : unit -> t
-  val receive : t -> 'a
-  val send : t -> 'a -> unit
-end = struct
-  type t = unit Event.channel
-  let create = Event.new_channel
-  let receive c = Obj.magic (Event.sync (Event.receive c))
-  let send c v = Event.sync (Event.send c (Obj.magic v ))
-end
-
 module Chan = Channel    
     
 module MChan : sig
@@ -29,13 +17,13 @@ module MChan : sig
   val accept_ongoing : t -> from_:string -> unit
   val disconnect : t -> from_:string -> unit
   val myname : t -> string
-  val get_connection : t -> othername:string -> UChan.t
+  val get_connection : t -> othername:string -> Unsafe.UChan.t
 end = struct
   
-  type connect_one = {from_:string; to_:string; connection:UChan.t}
+  type connect_one = {from_:string; to_:string; connection:Unsafe.UChan.t}
          
   (* 'session hash' is a hash table from role id to untyped session chan *)
-  type t = {name: string; sess: (string, UChan.t) Hashtbl.t; connector: [`ConnectLater] shared option}
+  type t = {name: string; sess: (string, Unsafe.UChan.t) Hashtbl.t; connector: [`ConnectLater] shared option}
 
   (* entry point -- shared channel; 
      the payload is the client's id and a typed channel to send bach
@@ -58,7 +46,7 @@ end = struct
     | None -> failwith "connect_ongoing: explicit connection used in implicit-connection session"
     | Some (ConnectLater hash) -> begin
         let connector = Hashtbl.find hash to_ in
-        let conn = UChan.create () in
+        let conn = Unsafe.UChan.create () in
         Chan.send connector {from_=name;to_;connection=conn};
         assert (not (Hashtbl.mem sess to_));
         Hashtbl.add sess to_ conn
@@ -110,7 +98,7 @@ end = struct
            Hashtbl.find hashhash (r2,r1)
          with
          | Not_found -> begin
-             let s = UChan.create () in
+             let s = Unsafe.UChan.create () in
              Hashtbl.add hashhash (r1,r2) s;
              s
            end

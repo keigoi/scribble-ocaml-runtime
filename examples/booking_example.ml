@@ -31,7 +31,7 @@ let booking_agent () =
   close s
 
 let booking_client () =
-  let%slot #s = connect_C ch in
+  let%slot #s = accept_C ch in
   
   send s role_A msg_Query "from London to Paris, 10th July 2017" >>
 
@@ -56,7 +56,7 @@ let booking_client () =
       
 
 let booking_server () =
-  let%slot #s = accept_S ch in
+  let%slot #s = connect_S ch in
 
   let rec loop () =
     match%lin receive s role_A with

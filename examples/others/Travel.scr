@@ -7,7 +7,7 @@ type <java> "java.lang.Integer" from "rt.jar" as Int;
 type <java> "java.lang.String" from "rt.jar" as String;
 
 
-/*
+//*
 global protocol Booking(role C, role A, role S)
 {
 	choice at C
@@ -37,7 +37,7 @@ global protocol Booking(role C, role A, role S)
 //*/
 
 
-//*
+/*
 explicit global protocol BookingExp(role C, role A, role S)
 {
 	connect C to A;

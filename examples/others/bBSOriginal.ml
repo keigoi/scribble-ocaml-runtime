@@ -52,30 +52,30 @@ and bBSOriginal_FinanceDept_1 =
           [`sendLoanAmount of [`ApplicationPortal] role * int data *
             [`close] sess]] sess]] sess]]
 
-let role_Applicant : [`Applicant] role = Internal.__mkrole "bBSOriginal_Applicant"
-let role_ApplicationPortal : [`ApplicationPortal] role = Internal.__mkrole "bBSOriginal_ApplicationPortal"
-let role_ProcessingDept : [`ProcessingDept] role = Internal.__mkrole "bBSOriginal_ProcessingDept"
-let role_FinanceDept : [`FinanceDept] role = Internal.__mkrole "bBSOriginal_FinanceDept"
+let role_Applicant : [`Applicant] role = Internal.__mkrole "role_Applicant"
+let role_ApplicationPortal : [`ApplicationPortal] role = Internal.__mkrole "role_ApplicationPortal"
+let role_ProcessingDept : [`ProcessingDept] role = Internal.__mkrole "role_ProcessingDept"
+let role_FinanceDept : [`FinanceDept] role = Internal.__mkrole "role_FinanceDept"
 
-let initiate_Applicant : 'pre 'post. (bBSOriginal,[`ConnectLater]) channel -> bindto:(empty, bBSOriginal_Applicant sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let initiate_Applicant : 'pre 'post. (bBSOriginal,[`Explicit]) channel -> bindto:(empty, bBSOriginal_Applicant sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  Internal.__initiate ~myname:"bBSOriginal_Applicant" ch
-let initiate_ApplicationPortal : 'pre 'post. (bBSOriginal,[`ConnectLater]) channel -> bindto:(empty, bBSOriginal_ApplicationPortal sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+  Internal.__initiate ~myname:"role_Applicant" ch
+let initiate_ApplicationPortal : 'pre 'post. (bBSOriginal,[`Explicit]) channel -> bindto:(empty, bBSOriginal_ApplicationPortal sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  Internal.__initiate ~myname:"bBSOriginal_ApplicationPortal" ch
-let initiate_ProcessingDept : 'pre 'post. (bBSOriginal,[`ConnectLater]) channel -> bindto:(empty, bBSOriginal_ProcessingDept sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+  Internal.__initiate ~myname:"role_ApplicationPortal" ch
+let initiate_ProcessingDept : 'pre 'post. (bBSOriginal,[`Explicit]) channel -> bindto:(empty, bBSOriginal_ProcessingDept sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  Internal.__initiate ~myname:"bBSOriginal_ProcessingDept" ch
-let initiate_FinanceDept : 'pre 'post. (bBSOriginal,[`ConnectLater]) channel -> bindto:(empty, bBSOriginal_FinanceDept sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+  Internal.__initiate ~myname:"role_ProcessingDept" ch
+let initiate_FinanceDept : 'pre 'post. (bBSOriginal,[`Explicit]) channel -> bindto:(empty, bBSOriginal_FinanceDept sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  Internal.__initiate ~myname:"bBSOriginal_FinanceDept" ch
+  Internal.__initiate ~myname:"role_FinanceDept" ch
 
-let new_channel_bBSOriginal () : (bBSOriginal,[`ConnectLater]) channel = Internal.__new_connect_later_channel ["bBSOriginal_Applicant";"bBSOriginal_ApplicationPortal";"bBSOriginal_ProcessingDept";"bBSOriginal_FinanceDept"]
+let new_channel_bBSOriginal () : (bBSOriginal,[`Explicit]) channel = Internal.__new_connect_later_channel ["role_Applicant";"role_ApplicationPortal";"role_ProcessingDept";"role_FinanceDept"]
 let msg_none = {_pack=(fun a -> `msg(a))}
+let msg_applyForLoan = {_pack=(fun a -> `applyForLoan(a))}
 let msg_checkEligibility = {_pack=(fun a -> `checkEligibility(a))}
-let msg_reject = {_pack=(fun a -> `reject(a))}
-let msg_sendLoanAmount = {_pack=(fun a -> `sendLoanAmount(a))}
 let msg_getLoanAmount = {_pack=(fun a -> `getLoanAmount(a))}
+let msg_reject = {_pack=(fun a -> `reject(a))}
 let msg_requestConfirmation = {_pack=(fun a -> `requestConfirmation(a))}
 let msg_respond = {_pack=(fun a -> `respond(a))}
-let msg_applyForLoan = {_pack=(fun a -> `applyForLoan(a))}
+let msg_sendLoanAmount = {_pack=(fun a -> `sendLoanAmount(a))}

@@ -54,27 +54,27 @@ and booking_S_1 =
     |`No of unit data *
       [`close] sess]]
 
-let role_C : [`C] role = Internal.__mkrole "booking_C"
-let role_A : [`A] role = Internal.__mkrole "booking_A"
-let role_S : [`S] role = Internal.__mkrole "booking_S"
+let role_C : [`C] role = Internal.__mkrole "role_C"
+let role_A : [`A] role = Internal.__mkrole "role_A"
+let role_S : [`S] role = Internal.__mkrole "role_S"
 
-let accept_C : 'pre 'post. (booking,[`ConnectFirst]) channel -> bindto:(empty, booking_C sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let accept_C : 'pre 'post. (booking,[`Implicit]) channel -> bindto:(empty, booking_C sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  Internal.__accept ~myname:"booking_C" ~cli_count:2 ch
+  Internal.__accept ~myname:"role_C" ~cli_count:2 ch
 
-let connect_A : 'pre 'post. (booking,[`ConnectFirst]) channel -> bindto:(empty, booking_A sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let connect_A : 'pre 'post. (booking,[`Implicit]) channel -> bindto:(empty, booking_A sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  Internal.__connect ~myname:"booking_A" ch
-let connect_S : 'pre 'post. (booking,[`ConnectFirst]) channel -> bindto:(empty, booking_S sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+  Internal.__connect ~myname:"role_A" ch
+let connect_S : 'pre 'post. (booking,[`Implicit]) channel -> bindto:(empty, booking_S sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  Internal.__connect ~myname:"booking_S" ch
+  Internal.__connect ~myname:"role_S" ch
 
-let new_channel_booking : unit -> (booking,[`ConnectFirst]) channel = new_channel
-let msg_Quote = {_pack=(fun a -> `Quote(a))}
+let new_channel_booking : unit -> (booking,[`Implicit]) channel = new_channel
+let msg_Ack = {_pack=(fun a -> `Ack(a))}
+let msg_Bye = {_pack=(fun a -> `Bye(a))}
+let msg_Dummy = {_pack=(fun a -> `Dummy(a))}
 let msg_No = {_pack=(fun a -> `No(a))}
 let msg_Payment = {_pack=(fun a -> `Payment(a))}
 let msg_Query = {_pack=(fun a -> `Query(a))}
+let msg_Quote = {_pack=(fun a -> `Quote(a))}
 let msg_Yes = {_pack=(fun a -> `Yes(a))}
-let msg_Ack = {_pack=(fun a -> `Ack(a))}
-let msg_Dummy = {_pack=(fun a -> `Dummy(a))}
-let msg_Bye = {_pack=(fun a -> `Bye(a))}

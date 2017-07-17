@@ -20,7 +20,7 @@ global protocol TwoBuyer(role A, role B, role S)
 	do TwoBuyerChoice(A, B, S);
 }
 
-aux global protocol TwoBuyerChoice(role A, role B, role S)
+global protocol TwoBuyerChoice(role A, role B, role S)
 {
 	choice at B
 	{

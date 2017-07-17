@@ -45,30 +45,30 @@ and buyerBrokerSupplier_FinanceDept_1 =
     |`reject of unit data *
       [`close] sess]]
 
-let role_Applicant : [`Applicant] role = Internal.__mkrole "buyerBrokerSupplier_Applicant"
-let role_ApplicationPortal : [`ApplicationPortal] role = Internal.__mkrole "buyerBrokerSupplier_ApplicationPortal"
-let role_ProcessingDept : [`ProcessingDept] role = Internal.__mkrole "buyerBrokerSupplier_ProcessingDept"
-let role_FinanceDept : [`FinanceDept] role = Internal.__mkrole "buyerBrokerSupplier_FinanceDept"
+let role_Applicant : [`Applicant] role = Internal.__mkrole "role_Applicant"
+let role_ApplicationPortal : [`ApplicationPortal] role = Internal.__mkrole "role_ApplicationPortal"
+let role_ProcessingDept : [`ProcessingDept] role = Internal.__mkrole "role_ProcessingDept"
+let role_FinanceDept : [`FinanceDept] role = Internal.__mkrole "role_FinanceDept"
 
-let accept_Applicant : 'pre 'post. (buyerBrokerSupplier,[`ConnectFirst]) channel -> bindto:(empty, buyerBrokerSupplier_Applicant sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let accept_Applicant : 'pre 'post. (buyerBrokerSupplier,[`Implicit]) channel -> bindto:(empty, buyerBrokerSupplier_Applicant sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  Internal.__accept ~myname:"buyerBrokerSupplier_Applicant" ~cli_count:3 ch
+  Internal.__accept ~myname:"role_Applicant" ~cli_count:3 ch
 
-let connect_ApplicationPortal : 'pre 'post. (buyerBrokerSupplier,[`ConnectFirst]) channel -> bindto:(empty, buyerBrokerSupplier_ApplicationPortal sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let connect_ApplicationPortal : 'pre 'post. (buyerBrokerSupplier,[`Implicit]) channel -> bindto:(empty, buyerBrokerSupplier_ApplicationPortal sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  Internal.__connect ~myname:"buyerBrokerSupplier_ApplicationPortal" ch
-let connect_ProcessingDept : 'pre 'post. (buyerBrokerSupplier,[`ConnectFirst]) channel -> bindto:(empty, buyerBrokerSupplier_ProcessingDept sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+  Internal.__connect ~myname:"role_ApplicationPortal" ch
+let connect_ProcessingDept : 'pre 'post. (buyerBrokerSupplier,[`Implicit]) channel -> bindto:(empty, buyerBrokerSupplier_ProcessingDept sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  Internal.__connect ~myname:"buyerBrokerSupplier_ProcessingDept" ch
-let connect_FinanceDept : 'pre 'post. (buyerBrokerSupplier,[`ConnectFirst]) channel -> bindto:(empty, buyerBrokerSupplier_FinanceDept sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+  Internal.__connect ~myname:"role_ProcessingDept" ch
+let connect_FinanceDept : 'pre 'post. (buyerBrokerSupplier,[`Implicit]) channel -> bindto:(empty, buyerBrokerSupplier_FinanceDept sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  Internal.__connect ~myname:"buyerBrokerSupplier_FinanceDept" ch
+  Internal.__connect ~myname:"role_FinanceDept" ch
 
-let new_channel_buyerBrokerSupplier : unit -> (buyerBrokerSupplier,[`ConnectFirst]) channel = new_channel
+let new_channel_buyerBrokerSupplier : unit -> (buyerBrokerSupplier,[`Implicit]) channel = new_channel
+let msg_applyForLoan = {_pack=(fun a -> `applyForLoan(a))}
 let msg_checkEligibility = {_pack=(fun a -> `checkEligibility(a))}
-let msg_reject = {_pack=(fun a -> `reject(a))}
-let msg_sendLoanAmount = {_pack=(fun a -> `sendLoanAmount(a))}
 let msg_getLoanAmount = {_pack=(fun a -> `getLoanAmount(a))}
+let msg_reject = {_pack=(fun a -> `reject(a))}
 let msg_requestConfirmation = {_pack=(fun a -> `requestConfirmation(a))}
 let msg_respond = {_pack=(fun a -> `respond(a))}
-let msg_applyForLoan = {_pack=(fun a -> `applyForLoan(a))}
+let msg_sendLoanAmount = {_pack=(fun a -> `sendLoanAmount(a))}

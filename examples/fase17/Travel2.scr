@@ -3,13 +3,13 @@
 
 module f17.travel.port.Travel2;
 
-type <java> "java.lang.String" from "rt.jar" as Str;
+type <java> "java.lang.String" from "rt.jar" as String;
 type <java> "java.lang.Integer" from "rt.jar" as Int;
 
 
 // "Manual" port forwarding as Int -- C not assumed to know S port a priori
 // C, A and S all mutually interact, using "fresh" port passing for correlation
-explicit global protocol Travel(role C, role A, role S)
+explicit global protocol Travel2(role C, role A, role S)
 {
 	connect C to A;
 	do Nego(C, A, S);
@@ -19,7 +19,7 @@ aux global protocol Nego(role C, role A, role S)
 {
 	choice at C
 	{
-		query(Str) from C to A;
+		query(String) from C to A;
 		quote(Int) from A to C;
 		do Nego(C, A, S);
 	}
@@ -29,9 +29,9 @@ aux global protocol Nego(role C, role A, role S)
 		connect A to S;
 		port(Int) from S to A;
 		port(Int) from A to C;
-		//pay(Str) connect C to S;
+		//pay(String) connect C to S;
 		connect C to S;
-		pay(Str) from C to S;
+		pay(String) from C to S;
 		confirm(Int) from S to C;
 		ack(Int) from C to A;  // accpt(Int) refactored as ack
 	}

@@ -53,21 +53,21 @@ and smtp_S_3 =
       [`recv of [`C] role * [`Quit of unit data *
         [`close] sess]] sess]]
 
-let role_C : [`C] role = Internal.__mkrole "smtp_C"
-let role_S : [`S] role = Internal.__mkrole "smtp_S"
+let role_C : [`C] role = Internal.__mkrole "role_C"
+let role_S : [`S] role = Internal.__mkrole "role_S"
 
-let accept_S : 'pre 'post. (smtp,[`ConnectFirst]) channel -> bindto:(empty, smtp_S sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let accept_S : 'pre 'post. (smtp,[`Implicit]) channel -> bindto:(empty, smtp_S sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  Internal.__accept ~myname:"smtp_S" ~cli_count:1 ch
+  Internal.__accept ~myname:"role_S" ~cli_count:1 ch
 
-let connect_C : 'pre 'post. (smtp,[`ConnectFirst]) channel -> bindto:(empty, smtp_C sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let connect_C : 'pre 'post. (smtp,[`Implicit]) channel -> bindto:(empty, smtp_C sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  Internal.__connect ~myname:"smtp_C" ch
+  Internal.__connect ~myname:"role_C" ch
 
-let new_channel_smtp : unit -> (smtp,[`ConnectFirst]) channel = new_channel
+let new_channel_smtp : unit -> (smtp,[`Implicit]) channel = new_channel
 let msg_220 = {_pack=(fun a -> `_220(a))}
+let msg_250 = {_pack=(fun a -> `_250(a))}
 let msg_250d = {_pack=(fun a -> `_250d(a))}
 let msg_Ehlo = {_pack=(fun a -> `Ehlo(a))}
 let msg_Quit = {_pack=(fun a -> `Quit(a))}
-let msg_250 = {_pack=(fun a -> `_250(a))}
 let msg_StartTls = {_pack=(fun a -> `StartTls(a))}

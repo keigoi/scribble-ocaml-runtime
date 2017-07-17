@@ -3,11 +3,11 @@
 
 module f17.paper.Sec4;
 
-type <java> "java.lang.String" from "rt.jar" as Str;
+type <java> "java.lang.String" from "rt.jar" as String;
 type <java> "java.lang.Integer" from "rt.jar" as Int;
 
 
-explicit global protocol TravelAgency(role C, role A, role S)
+explicit global protocol TravelAgency_Sec4(role C, role A, role S)
 {
 	connect C to A;
 	do Nego(C, A, S);
@@ -17,7 +17,7 @@ aux global protocol Nego(role C, role A, role S)
 {
 	choice at C
 	{
-		query(Str) from C to A;
+		query(String) from C to A;
 		quote(Int) from A to C;
 		do Nego(C, A, S);
 	}
@@ -27,7 +27,7 @@ aux global protocol Nego(role C, role A, role S)
 		connect A to S;
 		port(Int) from S to A;
 		port(Int) from A to C;
-		pay(Str) connect C to S;
+		pay(String) connect C to S;
 		confirm(Int) from S to C;
 	}
 	or
@@ -47,7 +47,7 @@ aux global protocol Nego2(role C, role A, role S)
 {
 	choice at C
 	{
-		query(Str) from C to A;
+		query(String) from C to A;
 		quote(Int) from A to C;
 		do Nego2(C, A, S);
 	}
@@ -57,9 +57,9 @@ aux global protocol Nego2(role C, role A, role S)
 		connect A to S;
 		port(p:Int) from S to A; @"open=C"    // FIXME: open=p:C
 		port(p) from A to C;
-		//pay(Str) connect C to S; @"port=p"  // FIXME
+		//pay(String) connect C to S; @"port=p"  // FIXME
 		connect C to S; @"port=p"
-		pay(Str) from C to S;
+		pay(String) from C to S;
 		confirm(Int) from S to C;
 	}
 	or

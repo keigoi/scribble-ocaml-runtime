@@ -5,15 +5,15 @@
 module fase16.adder.Adder;
 
 
-type <java> "java.lang.Integer" from "rt.jar" as Integer;
+type <java> "java.lang.Integer" from "rt.jar" as Int;
 
 
 global protocol Adder(role C, role S)
 {
 	choice at C
 	{
-		Add(Integer, Integer) from C to S;
-		Res(Integer) from S to C;
+		Add(Int, Int) from C to S;
+		Res(Int) from S to C;
 		do Adder(C, S);
 	}
 	or

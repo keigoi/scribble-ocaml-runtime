@@ -4,13 +4,11 @@
 open Multiparty
 type adder
 
-type integer = int
-
 type adder_C = adder_C_1
 and adder_C_1 = 
   [`send of
-    [`Add of [`S] role * (integer * integer) data *
-      [`recv of [`S] role * [`Res of integer data *
+    [`Add of [`S] role * (int * int) data *
+      [`recv of [`S] role * [`Res of int data *
         adder_C_1 sess]] sess
     |`Bye of [`S] role * unit data *
       [`recv of [`S] role * [`Bye of unit data *
@@ -18,27 +16,27 @@ and adder_C_1 =
 type adder_S = adder_S_1
 and adder_S_1 = 
   [`recv of [`C] role *
-    [`Add of (integer * integer) data *
+    [`Add of (int * int) data *
       [`send of
-        [`Res of [`C] role * integer data *
+        [`Res of [`C] role * int data *
           adder_S_1 sess]] sess
     |`Bye of unit data *
       [`send of
         [`Bye of [`C] role * unit data *
           [`close] sess]] sess]]
 
-let role_C : [`C] role = Internal.__mkrole "adder_C"
-let role_S : [`S] role = Internal.__mkrole "adder_S"
+let role_C : [`C] role = Internal.__mkrole "role_C"
+let role_S : [`S] role = Internal.__mkrole "role_S"
 
-let accept_C : 'pre 'post. (adder,[`ConnectFirst]) channel -> bindto:(empty, adder_C sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let accept_C : 'pre 'post. (adder,[`Implicit]) channel -> bindto:(empty, adder_C sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  Internal.__accept ~myname:"adder_C" ~cli_count:1 ch
+  Internal.__accept ~myname:"role_C" ~cli_count:1 ch
 
-let connect_S : 'pre 'post. (adder,[`ConnectFirst]) channel -> bindto:(empty, adder_S sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let connect_S : 'pre 'post. (adder,[`Implicit]) channel -> bindto:(empty, adder_S sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  Internal.__connect ~myname:"adder_S" ch
+  Internal.__connect ~myname:"role_S" ch
 
-let new_channel_adder : unit -> (adder,[`ConnectFirst]) channel = new_channel
+let new_channel_adder : unit -> (adder,[`Implicit]) channel = new_channel
 let msg_Add = {_pack=(fun a -> `Add(a))}
-let msg_Res = {_pack=(fun a -> `Res(a))}
 let msg_Bye = {_pack=(fun a -> `Bye(a))}
+let msg_Res = {_pack=(fun a -> `Res(a))}

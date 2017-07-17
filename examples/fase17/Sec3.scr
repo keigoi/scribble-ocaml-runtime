@@ -4,7 +4,7 @@
 module f17.paper.Sec3;
 
 
-explicit global protocol Travel(role C, role A, role S)
+explicit global protocol Travel_Sec3(role C, role A, role S)
 {
 	connect C to A;
 	rec TravelAgency

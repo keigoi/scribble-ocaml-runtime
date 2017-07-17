@@ -38,21 +38,21 @@ and discon_C_1 =
         [`msg of [`B] role * unit data *
           discon_C_1 sess]] sess]]
 
-let role_A : [`A] role = Internal.__mkrole "discon_A"
-let role_B : [`B] role = Internal.__mkrole "discon_B"
-let role_C : [`C] role = Internal.__mkrole "discon_C"
+let role_A : [`A] role = Internal.__mkrole "role_A"
+let role_B : [`B] role = Internal.__mkrole "role_B"
+let role_C : [`C] role = Internal.__mkrole "role_C"
 
-let initiate_A : 'pre 'post. (discon,[`ConnectLater]) channel -> bindto:(empty, discon_A sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let initiate_A : 'pre 'post. (discon,[`Explicit]) channel -> bindto:(empty, discon_A sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  Internal.__initiate ~myname:"discon_A" ch
-let initiate_B : 'pre 'post. (discon,[`ConnectLater]) channel -> bindto:(empty, discon_B sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+  Internal.__initiate ~myname:"role_A" ch
+let initiate_B : 'pre 'post. (discon,[`Explicit]) channel -> bindto:(empty, discon_B sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  Internal.__initiate ~myname:"discon_B" ch
-let initiate_C : 'pre 'post. (discon,[`ConnectLater]) channel -> bindto:(empty, discon_C sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+  Internal.__initiate ~myname:"role_B" ch
+let initiate_C : 'pre 'post. (discon,[`Explicit]) channel -> bindto:(empty, discon_C sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  Internal.__initiate ~myname:"discon_C" ch
+  Internal.__initiate ~myname:"role_C" ch
 
-let new_channel_discon () : (discon,[`ConnectLater]) channel = Internal.__new_connect_later_channel ["discon_A";"discon_B";"discon_C"]
+let new_channel_discon () : (discon,[`Explicit]) channel = Internal.__new_connect_later_channel ["role_A";"role_B";"role_C"]
 let msg_none = {_pack=(fun a -> `msg(a))}
 let msg_1 = {_pack=(fun a -> `_1(a))}
 let msg_2 = {_pack=(fun a -> `_2(a))}

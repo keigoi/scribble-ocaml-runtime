@@ -33,21 +33,21 @@ and mathService_S_1 =
     |`Bye of unit data *
       [`close] sess]]
 
-let role_C : [`C] role = Internal.__mkrole "mathService_C"
-let role_S : [`S] role = Internal.__mkrole "mathService_S"
+let role_C : [`C] role = Internal.__mkrole "role_C"
+let role_S : [`S] role = Internal.__mkrole "role_S"
 
-let accept_C : 'pre 'post. (mathService,[`ConnectFirst]) channel -> bindto:(empty, mathService_C sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let accept_C : 'pre 'post. (mathService,[`Implicit]) channel -> bindto:(empty, mathService_C sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  Internal.__accept ~myname:"mathService_C" ~cli_count:1 ch
+  Internal.__accept ~myname:"role_C" ~cli_count:1 ch
 
-let connect_S : 'pre 'post. (mathService,[`ConnectFirst]) channel -> bindto:(empty, mathService_S sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let connect_S : 'pre 'post. (mathService,[`Implicit]) channel -> bindto:(empty, mathService_S sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  Internal.__connect ~myname:"mathService_S" ch
+  Internal.__connect ~myname:"role_S" ch
 
-let new_channel_mathService : unit -> (mathService,[`ConnectFirst]) channel = new_channel
-let msg_Val = {_pack=(fun a -> `Val(a))}
+let new_channel_mathService : unit -> (mathService,[`Implicit]) channel = new_channel
 let msg_Add = {_pack=(fun a -> `Add(a))}
-let msg_Prod = {_pack=(fun a -> `Prod(a))}
-let msg_Mult = {_pack=(fun a -> `Mult(a))}
-let msg_Sum = {_pack=(fun a -> `Sum(a))}
 let msg_Bye = {_pack=(fun a -> `Bye(a))}
+let msg_Mult = {_pack=(fun a -> `Mult(a))}
+let msg_Prod = {_pack=(fun a -> `Prod(a))}
+let msg_Sum = {_pack=(fun a -> `Sum(a))}
+let msg_Val = {_pack=(fun a -> `Val(a))}

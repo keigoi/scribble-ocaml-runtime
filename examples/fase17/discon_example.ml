@@ -1,13 +1,10 @@
-(* ocamlfind ocamlc -c -rectypes -thread -package session-ocaml,session-ocaml.ppx,session-ocaml.ppx_lens,ppx_deriving examples/explicit_connection_example.ml *)
 open Multiparty
-[%%s_syntax_rebind (module Multiparty.Syntax) ]   
+open P2
 
 (* declare a single slot 's' *)
 type 'a ctx = <s : 'a>
 [@@deriving lens]
 [@@runner]
-            
-open Explicit_connection
 
 let ch = new_channel_p2 ()
 
@@ -18,13 +15,9 @@ let proc_a () =
         connect s role_B msg_1 () >>
         disconnect s role_B msg_none () >>=
         loop
-      end else if Random.int 2 <> 0 then begin
+      end else begin
         connect s role_C msg_2 () >>
         disconnect s role_C msg_none () >>=
-        loop
-      end else begin
-        connect s role_B msg_3 () >>
-        disconnect s role_B msg_none () >>=
         loop
       end
   in
@@ -33,12 +26,8 @@ let proc_a () =
 let proc_b () =
   let%slot #s = initiate_B ch in
   let rec loop () =
-    match%label accept_receive s role_A with
-    | `_1() -> begin
-        disconnect s role_A msg_none () >>=
-        loop
-      end
-    | `_3() -> begin
+    match%lin accept s role_A with
+    | `_1(_,#s) -> begin
         disconnect s role_A msg_none () >>=
         loop
       end
@@ -48,8 +37,8 @@ let proc_b () =
 let proc_c () =
   let%slot #s = initiate_C ch in
   let rec loop () =
-    match%label accept_receive s role_A with
-    | `_2() -> begin
+    match%lin accept s role_A with
+    | `_2(_,#s) -> begin
         disconnect s role_A msg_none () >>=
         loop
       end
@@ -57,7 +46,6 @@ let proc_c () =
   loop ()
 
 let () =
-  ignore @@ Thread.create (run_ctx proc_b) ();
-  ignore @@ Thread.create (run_ctx proc_c) ();
-  run_ctx proc_a ()
-
+  ignore @@ Thread.create (fun _ -> run_ctx (proc_b ())) ();
+  ignore @@ Thread.create (fun _ -> run_ctx (proc_c ())) ();
+  run_ctx (proc_a ())

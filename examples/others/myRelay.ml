@@ -20,20 +20,20 @@ and myRelay_C_1 =
   [`recv of [`B] role * [`M of unit data *
     [`close] sess]]
 
-let role_A : [`A] role = Internal.__mkrole "myRelay_A"
-let role_B : [`B] role = Internal.__mkrole "myRelay_B"
-let role_C : [`C] role = Internal.__mkrole "myRelay_C"
+let role_A : [`A] role = Internal.__mkrole "role_A"
+let role_B : [`B] role = Internal.__mkrole "role_B"
+let role_C : [`C] role = Internal.__mkrole "role_C"
 
-let accept_A : 'pre 'post. (myRelay,[`ConnectFirst]) channel -> bindto:(empty, myRelay_A sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let accept_A : 'pre 'post. (myRelay,[`Implicit]) channel -> bindto:(empty, myRelay_A sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  Internal.__accept ~myname:"myRelay_A" ~cli_count:2 ch
+  Internal.__accept ~myname:"role_A" ~cli_count:2 ch
 
-let connect_B : 'pre 'post. (myRelay,[`ConnectFirst]) channel -> bindto:(empty, myRelay_B sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let connect_B : 'pre 'post. (myRelay,[`Implicit]) channel -> bindto:(empty, myRelay_B sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  Internal.__connect ~myname:"myRelay_B" ch
-let connect_C : 'pre 'post. (myRelay,[`ConnectFirst]) channel -> bindto:(empty, myRelay_C sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+  Internal.__connect ~myname:"role_B" ch
+let connect_C : 'pre 'post. (myRelay,[`Implicit]) channel -> bindto:(empty, myRelay_C sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  Internal.__connect ~myname:"myRelay_C" ch
+  Internal.__connect ~myname:"role_C" ch
 
-let new_channel_myRelay : unit -> (myRelay,[`ConnectFirst]) channel = new_channel
+let new_channel_myRelay : unit -> (myRelay,[`Implicit]) channel = new_channel
 let msg_M = {_pack=(fun a -> `M(a))}

@@ -33,23 +33,23 @@ and optionalDynamicThirdParty_C_1 =
     [`greetings of unit data *
       [`close] sess]]
 
-let role_A : [`A] role = Internal.__mkrole "optionalDynamicThirdParty_A"
-let role_B : [`B] role = Internal.__mkrole "optionalDynamicThirdParty_B"
-let role_C : [`C] role = Internal.__mkrole "optionalDynamicThirdParty_C"
+let role_A : [`A] role = Internal.__mkrole "role_A"
+let role_B : [`B] role = Internal.__mkrole "role_B"
+let role_C : [`C] role = Internal.__mkrole "role_C"
 
-let initiate_A : 'pre 'post. (optionalDynamicThirdParty,[`ConnectLater]) channel -> bindto:(empty, optionalDynamicThirdParty_A sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let initiate_A : 'pre 'post. (optionalDynamicThirdParty,[`Explicit]) channel -> bindto:(empty, optionalDynamicThirdParty_A sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  Internal.__initiate ~myname:"optionalDynamicThirdParty_A" ch
-let initiate_B : 'pre 'post. (optionalDynamicThirdParty,[`ConnectLater]) channel -> bindto:(empty, optionalDynamicThirdParty_B sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+  Internal.__initiate ~myname:"role_A" ch
+let initiate_B : 'pre 'post. (optionalDynamicThirdParty,[`Explicit]) channel -> bindto:(empty, optionalDynamicThirdParty_B sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  Internal.__initiate ~myname:"optionalDynamicThirdParty_B" ch
-let initiate_C : 'pre 'post. (optionalDynamicThirdParty,[`ConnectLater]) channel -> bindto:(empty, optionalDynamicThirdParty_C sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+  Internal.__initiate ~myname:"role_B" ch
+let initiate_C : 'pre 'post. (optionalDynamicThirdParty,[`Explicit]) channel -> bindto:(empty, optionalDynamicThirdParty_C sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  Internal.__initiate ~myname:"optionalDynamicThirdParty_C" ch
+  Internal.__initiate ~myname:"role_C" ch
 
-let new_channel_optionalDynamicThirdParty () : (optionalDynamicThirdParty,[`ConnectLater]) channel = Internal.__new_connect_later_channel ["optionalDynamicThirdParty_A";"optionalDynamicThirdParty_B";"optionalDynamicThirdParty_C"]
+let new_channel_optionalDynamicThirdParty () : (optionalDynamicThirdParty,[`Explicit]) channel = Internal.__new_connect_later_channel ["role_A";"role_B";"role_C"]
 let msg_goodday = {_pack=(fun a -> `goodday(a))}
-let msg_opt1 = {_pack=(fun a -> `opt1(a))}
-let msg_hello = {_pack=(fun a -> `hello(a))}
-let msg_opt2 = {_pack=(fun a -> `opt2(a))}
 let msg_greetings = {_pack=(fun a -> `greetings(a))}
+let msg_hello = {_pack=(fun a -> `hello(a))}
+let msg_opt1 = {_pack=(fun a -> `opt1(a))}
+let msg_opt2 = {_pack=(fun a -> `opt2(a))}

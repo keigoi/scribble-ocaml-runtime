@@ -35,29 +35,29 @@ and proto_S3_1 =
       [`_3a of [`S1] role * unit data *
         [`close] sess]] sess]]
 
-let role_C : [`C] role = Internal.__mkrole "proto_C"
-let role_S1 : [`S1] role = Internal.__mkrole "proto_S1"
-let role_S2 : [`S2] role = Internal.__mkrole "proto_S2"
-let role_S3 : [`S3] role = Internal.__mkrole "proto_S3"
+let role_C : [`C] role = Internal.__mkrole "role_C"
+let role_S1 : [`S1] role = Internal.__mkrole "role_S1"
+let role_S2 : [`S2] role = Internal.__mkrole "role_S2"
+let role_S3 : [`S3] role = Internal.__mkrole "role_S3"
 
-let accept_C : 'pre 'post. (proto,[`ConnectFirst]) channel -> bindto:(empty, proto_C sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let accept_C : 'pre 'post. (proto,[`Implicit]) channel -> bindto:(empty, proto_C sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  Internal.__accept ~myname:"proto_C" ~cli_count:3 ch
+  Internal.__accept ~myname:"role_C" ~cli_count:3 ch
 
-let connect_S1 : 'pre 'post. (proto,[`ConnectFirst]) channel -> bindto:(empty, proto_S1 sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let connect_S1 : 'pre 'post. (proto,[`Implicit]) channel -> bindto:(empty, proto_S1 sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  Internal.__connect ~myname:"proto_S1" ch
-let connect_S2 : 'pre 'post. (proto,[`ConnectFirst]) channel -> bindto:(empty, proto_S2 sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+  Internal.__connect ~myname:"role_S1" ch
+let connect_S2 : 'pre 'post. (proto,[`Implicit]) channel -> bindto:(empty, proto_S2 sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  Internal.__connect ~myname:"proto_S2" ch
-let connect_S3 : 'pre 'post. (proto,[`ConnectFirst]) channel -> bindto:(empty, proto_S3 sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+  Internal.__connect ~myname:"role_S2" ch
+let connect_S3 : 'pre 'post. (proto,[`Implicit]) channel -> bindto:(empty, proto_S3 sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  Internal.__connect ~myname:"proto_S3" ch
+  Internal.__connect ~myname:"role_S3" ch
 
-let new_channel_proto : unit -> (proto,[`ConnectFirst]) channel = new_channel
-let msg_1a = {_pack=(fun a -> `_1a(a))}
+let new_channel_proto : unit -> (proto,[`Implicit]) channel = new_channel
 let msg_1 = {_pack=(fun a -> `_1(a))}
+let msg_1a = {_pack=(fun a -> `_1a(a))}
 let msg_2 = {_pack=(fun a -> `_2(a))}
+let msg_2a = {_pack=(fun a -> `_2a(a))}
 let msg_3 = {_pack=(fun a -> `_3(a))}
 let msg_3a = {_pack=(fun a -> `_3a(a))}
-let msg_2a = {_pack=(fun a -> `_2a(a))}

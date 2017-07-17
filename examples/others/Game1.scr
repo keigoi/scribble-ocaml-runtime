@@ -24,7 +24,7 @@ global protocol Game1Proto(role Client, role S1, role S2)
 }
 
 
-aux global protocol Game(role A, role B, role C)
+global protocol Game(role A, role B, role C)
 {
 	// Arbitrary for now
 	rec X

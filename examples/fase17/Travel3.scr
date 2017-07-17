@@ -8,7 +8,7 @@ type <java> "java.lang.Integer" from "rt.jar" as Int;
 
 
 // Annotiations and API gen for a restricted ("linear") form of shared channel passing
-explicit global protocol Travel(role C, role A, role S)
+explicit global protocol Travel3(role C, role A, role S)
 {
 	connect C to A;
 	do Nego(C, A, S);

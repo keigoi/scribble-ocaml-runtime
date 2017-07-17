@@ -4,6 +4,8 @@
 open Multiparty
 type adder
 
+type integer = int
+
 type adder_C = adder_C_1
 and adder_C_1 = 
   [`send of

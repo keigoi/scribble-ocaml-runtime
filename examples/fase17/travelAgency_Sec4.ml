@@ -4,6 +4,8 @@
 open Multiparty
 type travelAgency
 
+type str = string
+
 type travelAgency_C = travelAgency_C_1
 and travelAgency_C_1 = 
   [`send of

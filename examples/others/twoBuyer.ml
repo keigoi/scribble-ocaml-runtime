@@ -4,6 +4,8 @@
 open Multiparty
 type twoBuyer
 
+type date = int
+
 type twoBuyer_A = twoBuyer_A_1
 and twoBuyer_A_1 = 
   [`send of

@@ -1,5 +1,8 @@
 PKG threads session-ocaml linocaml.ppx linocaml.ppx_lens
 B +threads
+FLG -short-paths
 
 S .
 B .
+S others
+B others

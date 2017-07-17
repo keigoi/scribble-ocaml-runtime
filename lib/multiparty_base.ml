@@ -5,14 +5,15 @@ module Chan = Channel
 module MChan : sig
   (* the entry point *)
   type 't shared
-  val create_connect_first : unit -> [`ConnectFirst] shared
-  val create_connect_later : string list -> [`ConnectLater] shared
+  val create : unit -> [`Implicit] shared
+  val create_lazy : unit -> [`Implicit] shared
+  val create_later : string list -> [`Explicit] shared
 
   (* a session channel to communicate with another role *)
   type t
-  val accept : [`ConnectFirst] shared -> myname:string -> cli_count:int -> t
-  val connect : [`ConnectFirst] shared -> myname:string -> t
-  val initiate : [`ConnectLater] shared -> myname:string -> t
+  val accept : [`Implicit] shared -> myname:string -> cli_count:int -> t
+  val connect : [`Implicit] shared -> myname:string -> t
+  val initiate : [`Explicit] shared -> myname:string -> t
   val connect_ongoing : t -> to_:string -> unit
   val accept_ongoing : t -> from_:string -> unit
   val disconnect : t -> from_:string -> unit
@@ -21,30 +22,33 @@ module MChan : sig
 end = struct
   
   type connect_one = {from_:string; to_:string; connection:Unsafe.UChan.t}
+  type session = (string, Unsafe.UChan.t) Hashtbl.t
          
   (* 'session hash' is a hash table from role id to untyped session chan *)
-  type t = {name: string; sess: (string, Unsafe.UChan.t) Hashtbl.t; connector: [`ConnectLater] shared option}
+  type t = {name: string; sess: session Lazy.t; connector: [`Explicit] shared option}
 
   (* entry point -- shared channel; 
      the payload is the client's id and a typed channel to send bach
      the session hash   *)
    and 't shared =
-     | ConnectFirst: (string * t Chan.t) Chan.t -> [`ConnectFirst] shared
-     | ConnectLater: (string, connect_one Chan.t) Hashtbl.t -> [`ConnectLater] shared
+     | Implicit: (string * session Chan.t) Chan.t -> [`Implicit] shared
+     | Lazy: (string * session Chan.t) Chan.t -> [`Implicit] shared
+     | Explicit: (string, connect_one Chan.t) Hashtbl.t -> [`Explicit] shared
                          
-  let create_connect_first () = ConnectFirst (Chan.create ())
-  let create_connect_later names =
+  let create () = Implicit (Chan.create ())
+  let create_lazy () = Lazy (Chan.create ())
+  let create_later names =
     let hash = Hashtbl.create 42 in
     List.iter (fun name -> Hashtbl.add hash name (Chan.create ())) names;
-    ConnectLater hash
+    Explicit hash
 
-  let initiate (hash:[`ConnectLater] shared) ~myname =
-    {name=myname;sess=Hashtbl.create 42;connector=Some hash}
+  let initiate (hash:[`Explicit] shared) ~myname =
+    {name=myname;sess=Lazy.from_val (Hashtbl.create 42);connector=Some hash}
 
-  let connect_ongoing {name;sess;connector} ~to_ =
+  let connect_ongoing {name;sess=lazy sess;connector} ~to_ =
     match connector with
     | None -> failwith "connect_ongoing: explicit connection used in implicit-connection session"
-    | Some (ConnectLater hash) -> begin
+    | Some (Explicit hash) -> begin
         let connector = Hashtbl.find hash to_ in
         let conn = Unsafe.UChan.create () in
         Chan.send connector {from_=name;to_;connection=conn};
@@ -52,10 +56,10 @@ end = struct
         Hashtbl.add sess to_ conn
       end
 
-  let accept_ongoing {name;sess;connector} ~from_ =
+  let accept_ongoing {name;sess=lazy sess;connector} ~from_ =
     match connector with
     | None -> failwith (!%"accept_ongoing at %s: explicit connection used in implicit-connection session" name)
-    | Some (ConnectLater hash) -> begin
+    | Some (Explicit hash) -> begin
         let connector = Hashtbl.find hash name in
         let {from_=realfrom;to_=realto;connection=conn} = Chan.receive connector in
         if from_<>realfrom then begin
@@ -68,22 +72,25 @@ end = struct
         Hashtbl.add sess from_ conn
       end
 
-  let disconnect {name;sess} ~from_ =
+  let disconnect {name;sess=lazy sess} ~from_ =
     Hashtbl.remove sess from_
      
-  let accept (ConnectFirst sh) ~myname ~cli_count =
+  let accept sh ~myname ~cli_count =
+    let sh,lazy_ = match sh with Implicit sh -> sh,false | Lazy sh -> sh,true in
     let me = myname in
 
     (* accept all connections *)
     let rethash = Hashtbl.create 42 in
     let rec gather cnt =
       if cnt > 0 then begin
-        let rolename,ret = Chan.receive sh in
-        Hashtbl.add rethash rolename ret;
-        gather (cnt-1)
-      end
+          let rolename,ret = Chan.receive sh in
+          if Hashtbl.mem rethash rolename then
+            failwith (Printf.sprintf "role %s already connected. TODO: fix this to block rather than fail" rolename)
+          else
+            Hashtbl.add rethash rolename ret;
+          gather (cnt-1)
+        end
     in
-    gather cli_count;
     
     (* hashtbl to record sessions between (r1,r2) *)
     let hashhash = Hashtbl.create 42
@@ -106,35 +113,57 @@ end = struct
     (* my session hash *)
     let myhash = Hashtbl.create 42
     in
-    (* iterate on other roles to send back the session hash
-       (and prepare my session hash)  *)
-    Hashtbl.iter (fun r1 ret ->
-        let otherhash = Hashtbl.create 42 in
-        (* add session channels to roles other than the parent (me) *)
-        Hashtbl.iter (fun r2 _ ->
-            if r2 <> me && r1<>r2 then begin
-                let s = create_or_get_session r1 r2 in
-                Hashtbl.add otherhash r2 s
-              end
-          ) rethash;
-        (* then add the connection to me *)
-        let s = create_or_get_session me r1 in
-        Hashtbl.add otherhash me s;
-        (* and send back *)
-        Chan.send ret {name=r1; sess=otherhash; connector=None};
-        (* don't forget to prepare mine! *)
-        Hashtbl.add myhash r1 s;
-      ) rethash;
-    {name=myname; sess=myhash; connector=None}
+    let make () =
+      gather cli_count;
+      (* iterate on other roles to send back the session hash
+         (and prepare my session hash)  *)
+      Hashtbl.iter (fun r1 ret ->
+          let otherhash = Hashtbl.create 42 in
+          (* add session channels to roles other than the parent (me) *)
+          Hashtbl.iter (fun r2 _ ->
+              if r2 <> me && r1<>r2 then begin
+                  let s = create_or_get_session r1 r2 in
+                  Hashtbl.add otherhash r2 s
+                end
+            ) rethash;
+          (* then add the connection to me *)
+          let s = create_or_get_session me r1 in
+          Hashtbl.add otherhash me s;
+          (* and send back *)
+          Chan.send ret otherhash;
+          (* don't forget to prepare mine! *)
+          Hashtbl.add myhash r1 s;
+        ) rethash;
+      myhash
+    in
+    let sess =
+      if lazy_ then
+        Lazy.from_fun make
+      else
+        Lazy.from_val (make ())
+    in
+    {name=myname; sess=sess; connector=None}
 
-  let connect (ConnectFirst sh) ~myname =
-    let ret = Chan.create () in
-    Chan.send sh (myname,ret);
-    Chan.receive ret
+  let connect sh ~myname =
+    let sh, lazy_ = match sh with Implicit sh -> sh,false | Lazy sh -> sh, true in
+    let make () = 
+      let ret = Chan.create () in
+      Chan.send sh (myname,ret);
+      Chan.receive ret
+    in
+    let sess =
+      if lazy_ then
+        Lazy.from_fun make
+      else
+        Lazy.from_val (make ())
+    in
+    {name=myname;sess;connector=None}
+    
+      
 
   let myname {name} = name
     
-  let get_connection {sess=myhash} ~othername =
+  let get_connection {sess=lazy myhash} ~othername =
     try
       Hashtbl.find myhash othername
     with

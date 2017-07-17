@@ -22,7 +22,8 @@ val (>>) : ('pre, 'mid, unit) monad -> ('mid, 'post, 'b) monad -> ('pre, 'post, 
 type ('a,'b,'pre,'post) slot = ('a,'b,'pre,'post) Lens.t
 type empty = Linocaml.empty
 
-val new_channel : unit -> ('g,[`ConnectFirst]) channel
+val new_channel : unit -> ('g,[`Implicit]) channel
+val new_lazy_channel : unit -> ('g,[`Implicit]) channel
 
 val connect :
   ([ `send of 'br ] sess, 'p sess, 'pre, 'post) slot ->
@@ -37,6 +38,13 @@ val send :
   ([ `send of 'br ] sess, 'p sess, 'pre, 'post) slot ->
   'dir role -> ('br, 'dir role * 'v data * 'p sess) lab -> 'v -> ('pre, 'post, unit) monad
 
+(** invariant: 'br must be [`tag of 'a * 'b * 'c sess] *)
+val deleg_send :
+  ([ `send of 'br ] sess, 'p sess, 'pre, 'mid) slot ->
+  'dir role -> ('br, 'dir role * 'q sess * 'p sess) lab ->
+  ('q sess, empty, 'mid, 'post) slot ->
+  ('pre, 'post, unit) monad
+
 (** invariant: 'br must be [`tag of 'a * 'b sess] *)
 val receive :
   ([`recv of 'dir role * 'br] sess, empty, 'pre, 'post) slot
@@ -48,26 +56,26 @@ val close :
   ('pre, 'post, unit) monad
 
 module Internal : sig
-  val __new_connect_later_channel : string list -> ('g,[`ConnectLater]) channel
+  val __new_connect_later_channel : string list -> ('g,[`Explicit]) channel
   
   val __mkrole : string -> 'a role
   
   val __initiate :
     myname:string ->
-    ('g,[`ConnectLater]) channel ->
+    ('g,[`Explicit]) channel ->
     bindto:(empty, 'p sess, 'pre, 'post) slot ->
     ('pre, 'post, unit) monad
   
   val __connect :
     myname:string ->
-    ('g,[`ConnectFirst]) channel ->
+    ('g,[`Implicit]) channel ->
     bindto:(empty, 'p sess, 'pre, 'post) slot ->
     ('pre, 'post, unit) monad
   
   val __accept :
     myname:string ->
     cli_count:int ->
-    ('g,[`ConnectFirst]) channel ->
+    ('g,[`Implicit]) channel ->
     bindto:(empty, 'p sess, 'pre, 'post) slot ->
     ('pre, 'post, unit) monad
 end

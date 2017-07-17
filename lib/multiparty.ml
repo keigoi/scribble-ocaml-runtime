@@ -26,20 +26,21 @@ type ('br, 'payload) lab = {_pack: 'payload -> 'br}
 
 let __mkrole s = s
 
-let new_channel = MChan.create_connect_first
-let __new_connect_later_channel roles = MChan.create_connect_later roles
+let new_channel = MChan.create
+let new_lazy_channel = MChan.create_lazy
+let __new_connect_later_channel roles = MChan.create_later roles
 
-let __initiate : 'pre 'post. myname:string -> [`ConnectLater] MChan.shared -> bindto:(empty,'p sess,'pre,'post) slot -> ('pre,'post,unit) monad =
+let __initiate : 'pre 'post. myname:string -> [`Explicit] MChan.shared -> bindto:(empty,'p sess,'pre,'post) slot -> ('pre,'post,unit) monad =
   fun ~myname ch ~bindto ->
   let s = MChan.initiate ch ~myname in
   Linocaml.set bindto (MChan s)
   
-let __connect : 'pre 'post. myname:string -> [`ConnectFirst] MChan.shared -> bindto:(empty,'p sess,'pre,'post) slot -> ('pre,'post,unit) monad =
+let __connect : 'pre 'post. myname:string -> [`Implicit] MChan.shared -> bindto:(empty,'p sess,'pre,'post) slot -> ('pre,'post,unit) monad =
   fun ~myname ch ~bindto ->
   let s = MChan.connect ch ~myname in
   Linocaml.set bindto (MChan s)
 
-let __accept : 'pre 'post. myname:string -> cli_count:int -> [`ConnectFirst] MChan.shared -> bindto:(empty,'p sess,'pre,'post) slot -> ('pre,'post,unit) monad =
+let __accept : 'pre 'post. myname:string -> cli_count:int -> [`Implicit] MChan.shared -> bindto:(empty,'p sess,'pre,'post) slot -> ('pre,'post,unit) monad =
   fun ~myname ~cli_count ch ~bindto ->
   let s = MChan.accept ch ~myname ~cli_count in
   Linocaml.set bindto (MChan s)
@@ -95,6 +96,27 @@ let send
       (* we put Dummy for 'p sess part since the connection hash should not be shared with the others *)
       Unsafe.UChan.send uc (_pack (dir,Data__ v,Lin__ Dummy));
       set pre (Lin__ (MChan s)), ()
+    end
+
+(** invariant: 'br must be [`tag of 'a * 'b * 'c sess] *)
+let deleg_send
+    : type br dir v p q pre mid post.
+      ([`send of br] sess, p sess, pre, mid) slot
+      -> dir role
+      -> (br, dir role * q sess * p sess) lab
+      -> (q sess, empty, mid, post) slot
+      -> (pre, post, unit) monad
+  = fun {get=get1;set=set1} dir {_pack} {get=get2;set=set2} ->
+  Internal.__monad begin
+      fun pre ->
+      let s = match get1 pre with (Lin__ (MChan s)) -> s | Lin__ Dummy -> failwith "no session -- malformed ppx expansion?? @ send" in
+      let mid = set1 pre (Lin__ (MChan s)) in
+      let t = get2 mid in
+      print_endline (MChan.myname s ^ ": send to " ^ dir);
+      let uc = MChan.get_connection s ~othername:dir in
+      (* we put Dummy for 'p sess part since the connection hash should not be shared with the others *)
+      Unsafe.UChan.send uc (_pack (dir,t,Lin__ Dummy));
+      set2 mid Linocaml.Internal.__empty, ()
     end
 
 (** invariant: 'br must be [`tag of 'a * 'b sess] *)

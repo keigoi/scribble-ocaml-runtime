@@ -3,7 +3,7 @@
 module game.Game2;
 
 
-global protocol Proto(role C, role S)
+global protocol Game2Proto(role C, role S)
 {
 	choice at S
 	{

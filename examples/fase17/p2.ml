@@ -7,28 +7,28 @@ type p2
 type p2_A = p2_A_1
 and p2_A_1 = 
   [`send of
-    [`_1 of [`B] role connect * unit *
+    [`_1 of [`B] role connect * unit data *
       [`disconnect of
-        [`msg of [`B] role * unit *
-          p2_A_1]]
-    |`_2 of [`C] role connect * unit *
+        [`msg of [`B] role * unit data *
+          p2_A_1 sess]] sess
+    |`_2 of [`C] role connect * unit data *
       [`disconnect of
-        [`msg of [`C] role * unit *
-          p2_A_1]]]]
+        [`msg of [`C] role * unit data *
+          p2_A_1 sess]] sess]]
 type p2_B = p2_B_1
 and p2_B_1 = 
-  [`accept of
-    [`_1 of [`A] role * unit *
+  [`accept of [`A] role *
+    [`_1 of unit data *
       [`disconnect of
-        [`msg of [`A] role * unit *
-          p2_B_1]]]]
+        [`msg of [`A] role * unit data *
+          p2_B_1 sess]] sess]]
 type p2_C = p2_C_1
 and p2_C_1 = 
-  [`accept of
-    [`_2 of [`A] role * unit *
+  [`accept of [`A] role *
+    [`_2 of unit data *
       [`disconnect of
-        [`msg of [`A] role * unit *
-          p2_C_1]]]]
+        [`msg of [`A] role * unit data *
+          p2_C_1 sess]] sess]]
 
 let role_A : [`A] role = Internal.__mkrole "p2_A"
 let role_B : [`B] role = Internal.__mkrole "p2_B"

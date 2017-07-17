@@ -6,37 +6,58 @@ type proto
 
 type proto_C = proto_C_1
 and proto_C_1 = 
-  [`recv of [`msg of [`B] role * int *
-    [`deleg_recv of [`msg of [`B] role * threebuyer.ThreeBuyer_TwoBuyerChoice_B.TwoBuyerChoice_B
-      [`send of
-        [`ok of [`B] role * unit *
-          [`close]
-        |`quit of [`B] role * unit *
-          [`close]]]]]]]
-type proto_B = proto_B_1
-and proto_B_1 = 
   [`send of
-    [`msg of [`C] role * int *
-      [`send of
-        [`msg of [`C] role * threebuyer.ThreeBuyer_TwoBuyerChoice_B.TwoBuyerChoice_B *
-          [`recv of
-            [`ok of [`C] role * unit *
-              [`close]
-            |`quit of [`C] role * unit *
-              [`close]]]]]]]
+    [`_1 of [`S1] role * unit data *
+      [`recv of [`S1] role * [`_1a of unit data *
+        [`close] sess]] sess]]
+type proto_S1 = proto_S1_1
+and proto_S1_1 = 
+  [`recv of [`C] role * [`_1 of unit data *
+    [`send of
+      [`_2 of [`S2] role * unit data *
+        [`recv of [`S2] role * [`_2a of unit data *
+          [`send of
+            [`_3 of [`S3] role * unit data *
+              [`recv of [`S3] role * [`_3a of unit data *
+                [`send of
+                  [`_1a of [`C] role * unit data *
+                    [`close] sess]] sess]] sess]] sess]] sess]] sess]]
+type proto_S2 = proto_S2_1
+and proto_S2_1 = 
+  [`recv of [`S1] role * [`_2 of unit data *
+    [`send of
+      [`_2a of [`S1] role * unit data *
+        [`close] sess]] sess]]
+type proto_S3 = proto_S3_1
+and proto_S3_1 = 
+  [`recv of [`S1] role * [`_3 of unit data *
+    [`send of
+      [`_3a of [`S1] role * unit data *
+        [`close] sess]] sess]]
 
 let role_C : [`C] role = Internal.__mkrole "proto_C"
-let role_B : [`B] role = Internal.__mkrole "proto_B"
+let role_S1 : [`S1] role = Internal.__mkrole "proto_S1"
+let role_S2 : [`S2] role = Internal.__mkrole "proto_S2"
+let role_S3 : [`S3] role = Internal.__mkrole "proto_S3"
 
-let accept_B : 'pre 'post. (proto,[`ConnectFirst]) channel -> bindto:(empty, proto_B sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let accept_C : 'pre 'post. (proto,[`ConnectFirst]) channel -> bindto:(empty, proto_C sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  Internal.__accept ~myname:"proto_B" ~cli_count:1 ch
+  Internal.__accept ~myname:"proto_C" ~cli_count:3 ch
 
-let connect_C : 'pre 'post. (proto,[`ConnectFirst]) channel -> bindto:(empty, proto_C sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let connect_S1 : 'pre 'post. (proto,[`ConnectFirst]) channel -> bindto:(empty, proto_S1 sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
   fun ch ->
-  Internal.__connect ~myname:"proto_C" ch
+  Internal.__connect ~myname:"proto_S1" ch
+let connect_S2 : 'pre 'post. (proto,[`ConnectFirst]) channel -> bindto:(empty, proto_S2 sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+  fun ch ->
+  Internal.__connect ~myname:"proto_S2" ch
+let connect_S3 : 'pre 'post. (proto,[`ConnectFirst]) channel -> bindto:(empty, proto_S3 sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+  fun ch ->
+  Internal.__connect ~myname:"proto_S3" ch
 
-let new_channel_proto : unit -> (proto,[`ConnectLater]) channel = new_channel
-let msg_none = {_pack=(fun a -> `msg(a))}
-let msg_quit = {_pack=(fun a -> `quit(a))}
-let msg_ok = {_pack=(fun a -> `ok(a))}
+let new_channel_proto : unit -> (proto,[`ConnectFirst]) channel = new_channel
+let msg_1a = {_pack=(fun a -> `_1a(a))}
+let msg_1 = {_pack=(fun a -> `_1(a))}
+let msg_2 = {_pack=(fun a -> `_2(a))}
+let msg_3 = {_pack=(fun a -> `_3(a))}
+let msg_3a = {_pack=(fun a -> `_3a(a))}
+let msg_2a = {_pack=(fun a -> `_2a(a))}

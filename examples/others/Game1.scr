@@ -4,7 +4,7 @@
 module game.Game1;
 
 
-global protocol Proto(role Client, role S1, role S2)
+global protocol Game1Proto(role Client, role S1, role S2)
 {
 	choice at S1
 	{

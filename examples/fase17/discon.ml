@@ -7,36 +7,36 @@ type discon
 type discon_A = discon_A_1
 and discon_A_1 = 
   [`send of
-    [`msg of [`B] role connect * unit *
-      discon_A_2]]
+    [`msg of [`B] role connect * unit data *
+      discon_A_2 sess]]
 and discon_A_2 = 
   [`send of
-    [`_1 of [`B] role * unit *
-      discon_A_2
-    |`_3 of [`B] role * unit *
-      [`close]]]
+    [`_1 of [`B] role * unit data *
+      discon_A_2 sess
+    |`_3 of [`B] role * unit data *
+      [`close] sess]]
 type discon_B = discon_B_1
 and discon_B_1 = 
-  [`accept of
-    [`msg of [`A] role * unit *
-      discon_B_2]]
+  [`accept of [`A] role *
+    [`msg of unit data *
+      discon_B_2 sess]]
 and discon_B_2 = 
-  [`recv of
-    [`_1 of [`A] role * unit *
+  [`recv of [`A] role *
+    [`_1 of unit data *
       [`send of
-        [`_2 of [`C] role connect * unit *
+        [`_2 of [`C] role connect * unit data *
           [`disconnect of
-            [`msg of [`C] role * unit *
-              discon_B_2]]]]
-    |`_3 of [`A] role * unit *
-      [`close]]]
+            [`msg of [`C] role * unit data *
+              discon_B_2 sess]] sess]] sess
+    |`_3 of unit data *
+      [`close] sess]]
 type discon_C = discon_C_1
 and discon_C_1 = 
-  [`accept of
-    [`_2 of [`B] role * unit *
+  [`accept of [`B] role *
+    [`_2 of unit data *
       [`disconnect of
-        [`msg of [`B] role * unit *
-          discon_C_1]]]]
+        [`msg of [`B] role * unit data *
+          discon_C_1 sess]] sess]]
 
 let role_A : [`A] role = Internal.__mkrole "discon_A"
 let role_B : [`B] role = Internal.__mkrole "discon_B"

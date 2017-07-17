@@ -7,43 +7,43 @@ type buyerBrokerSupplier
 type buyerBrokerSupplier_Applicant = buyerBrokerSupplier_Applicant_1
 and buyerBrokerSupplier_Applicant_1 = 
   [`send of
-    [`applyForLoan of [`ApplicationPortal] role * string,string,int,int *
-      [`recv of
-        [`requestConfirmation of [`ApplicationPortal] role * int *
-          [`close]
-        |`reject of [`ApplicationPortal] role * unit *
-          [`close]]]]]
+    [`applyForLoan of [`ApplicationPortal] role * (string * string * int * int) data *
+      [`recv of [`ApplicationPortal] role *
+        [`requestConfirmation of int data *
+          [`close] sess
+        |`reject of unit data *
+          [`close] sess]] sess]]
 type buyerBrokerSupplier_ApplicationPortal = buyerBrokerSupplier_ApplicationPortal_1
 and buyerBrokerSupplier_ApplicationPortal_1 = 
-  [`recv of [`applyForLoan of [`Applicant] role * string,string,int,int *
+  [`recv of [`Applicant] role * [`applyForLoan of (string * string * int * int) data *
     [`send of
-      [`checkEligibility of [`ProcessingDept] role * string,string,int,int *
-        [`recv of [`respond of [`ProcessingDept] role * bool *
+      [`checkEligibility of [`ProcessingDept] role * (string * string * int * int) data *
+        [`recv of [`ProcessingDept] role * [`respond of bool data *
           [`send of
-            [`getLoanAmount of [`FinanceDept] role * int *
-              [`recv of [`sendLoanAmount of [`FinanceDept] role * int *
+            [`getLoanAmount of [`FinanceDept] role * int data *
+              [`recv of [`FinanceDept] role * [`sendLoanAmount of int data *
                 [`send of
-                  [`requestConfirmation of [`Applicant] role * int *
-                    [`close]]]]]
-            |`reject of [`FinanceDept] role * unit *
+                  [`requestConfirmation of [`Applicant] role * int data *
+                    [`close] sess]] sess]] sess
+            |`reject of [`FinanceDept] role * unit data *
               [`send of
-                [`reject of [`Applicant] role * unit *
-                  [`close]]]]]]]]]]]
+                [`reject of [`Applicant] role * unit data *
+                  [`close] sess]] sess]] sess]] sess]] sess]]
 type buyerBrokerSupplier_ProcessingDept = buyerBrokerSupplier_ProcessingDept_1
 and buyerBrokerSupplier_ProcessingDept_1 = 
-  [`recv of [`checkEligibility of [`ApplicationPortal] role * string,string,int,int *
+  [`recv of [`ApplicationPortal] role * [`checkEligibility of (string * string * int * int) data *
     [`send of
-      [`respond of [`ApplicationPortal] role * bool *
-        [`close]]]]]
+      [`respond of [`ApplicationPortal] role * bool data *
+        [`close] sess]] sess]]
 type buyerBrokerSupplier_FinanceDept = buyerBrokerSupplier_FinanceDept_1
 and buyerBrokerSupplier_FinanceDept_1 = 
-  [`recv of
-    [`getLoanAmount of [`ApplicationPortal] role * int *
+  [`recv of [`ApplicationPortal] role *
+    [`getLoanAmount of int data *
       [`send of
-        [`sendLoanAmount of [`ApplicationPortal] role * int *
-          [`close]]]
-    |`reject of [`ApplicationPortal] role * unit *
-      [`close]]]
+        [`sendLoanAmount of [`ApplicationPortal] role * int data *
+          [`close] sess]] sess
+    |`reject of unit data *
+      [`close] sess]]
 
 let role_Applicant : [`Applicant] role = Internal.__mkrole "buyerBrokerSupplier_Applicant"
 let role_ApplicationPortal : [`ApplicationPortal] role = Internal.__mkrole "buyerBrokerSupplier_ApplicationPortal"
@@ -64,7 +64,7 @@ let connect_FinanceDept : 'pre 'post. (buyerBrokerSupplier,[`ConnectFirst]) chan
   fun ch ->
   Internal.__connect ~myname:"buyerBrokerSupplier_FinanceDept" ch
 
-let new_channel_buyerBrokerSupplier : unit -> (buyerBrokerSupplier,[`ConnectLater]) channel = new_channel
+let new_channel_buyerBrokerSupplier : unit -> (buyerBrokerSupplier,[`ConnectFirst]) channel = new_channel
 let msg_checkEligibility = {_pack=(fun a -> `checkEligibility(a))}
 let msg_reject = {_pack=(fun a -> `reject(a))}
 let msg_sendLoanAmount = {_pack=(fun a -> `sendLoanAmount(a))}

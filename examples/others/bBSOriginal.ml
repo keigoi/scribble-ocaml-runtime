@@ -7,50 +7,50 @@ type bBSOriginal
 type bBSOriginal_Applicant = bBSOriginal_Applicant_1
 and bBSOriginal_Applicant_1 = 
   [`send of
-    [`msg of [`ApplicationPortal] role connect * unit *
+    [`msg of [`ApplicationPortal] role connect * unit data *
       [`send of
-        [`applyForLoan of [`ApplicationPortal] role * (string * string * int * int) *
-          [`recv of
-            [`requestConfirmation of [`ApplicationPortal] role * int *
-              [`close]
-            |`reject of [`ApplicationPortal] role * unit *
-              [`close]]]]]]]
+        [`applyForLoan of [`ApplicationPortal] role * (string * string * int * int) data *
+          [`recv of [`ApplicationPortal] role *
+            [`requestConfirmation of int data *
+              [`close] sess
+            |`reject of unit data *
+              [`close] sess]] sess]] sess]]
 type bBSOriginal_ApplicationPortal = bBSOriginal_ApplicationPortal_1
 and bBSOriginal_ApplicationPortal_1 = 
-  [`accept of
-    [`msg of [`Applicant] role * unit *
+  [`accept of [`Applicant] role *
+    [`msg of unit data *
       [`send of
-        [`msg of [`ProcessingDept] role connect * unit *
-          [`recv of [`applyForLoan of [`Applicant] role * (string * string * int * int) *
+        [`msg of [`ProcessingDept] role connect * unit data *
+          [`recv of [`Applicant] role * [`applyForLoan of (string * string * int * int) data *
             [`send of
-              [`checkEligibility of [`ProcessingDept] role * (string * string * int * int) *
-                [`recv of [`respond of [`ProcessingDept] role * bool *
+              [`checkEligibility of [`ProcessingDept] role * (string * string * int * int) data *
+                [`recv of [`ProcessingDept] role * [`respond of bool data *
                   [`send of
-                    [`msg of [`FinanceDept] role connect * unit *
+                    [`msg of [`FinanceDept] role connect * unit data *
                       [`send of
-                        [`getLoanAmount of [`FinanceDept] role * int *
-                          [`recv of [`sendLoanAmount of [`FinanceDept] role * int *
+                        [`getLoanAmount of [`FinanceDept] role * int data *
+                          [`recv of [`FinanceDept] role * [`sendLoanAmount of int data *
                             [`send of
-                              [`requestConfirmation of [`Applicant] role * int *
-                                [`close]]]]]]]
-                    |`reject of [`Applicant] role * unit *
-                      [`close]]]]]]]]]]]]]
+                              [`requestConfirmation of [`Applicant] role * int data *
+                                [`close] sess]] sess]] sess]] sess
+                    |`reject of [`Applicant] role * unit data *
+                      [`close] sess]] sess]] sess]] sess]] sess]] sess]]
 type bBSOriginal_ProcessingDept = bBSOriginal_ProcessingDept_1
 and bBSOriginal_ProcessingDept_1 = 
-  [`accept of
-    [`msg of [`ApplicationPortal] role * unit *
-      [`recv of [`checkEligibility of [`ApplicationPortal] role * (string * string * int * int) *
+  [`accept of [`ApplicationPortal] role *
+    [`msg of unit data *
+      [`recv of [`ApplicationPortal] role * [`checkEligibility of (string * string * int * int) data *
         [`send of
-          [`respond of [`ApplicationPortal] role * bool *
-            [`close]]]]]]]
+          [`respond of [`ApplicationPortal] role * bool data *
+            [`close] sess]] sess]] sess]]
 type bBSOriginal_FinanceDept = bBSOriginal_FinanceDept_1
 and bBSOriginal_FinanceDept_1 = 
-  [`accept of
-    [`msg of [`ApplicationPortal] role * unit *
-      [`recv of [`getLoanAmount of [`ApplicationPortal] role * int *
+  [`accept of [`ApplicationPortal] role *
+    [`msg of unit data *
+      [`recv of [`ApplicationPortal] role * [`getLoanAmount of int data *
         [`send of
-          [`sendLoanAmount of [`ApplicationPortal] role * int *
-            [`close]]]]]]]
+          [`sendLoanAmount of [`ApplicationPortal] role * int data *
+            [`close] sess]] sess]] sess]]
 
 let role_Applicant : [`Applicant] role = Internal.__mkrole "bBSOriginal_Applicant"
 let role_ApplicationPortal : [`ApplicationPortal] role = Internal.__mkrole "bBSOriginal_ApplicationPortal"

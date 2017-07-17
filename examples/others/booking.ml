@@ -7,52 +7,52 @@ type booking
 type booking_C = booking_C_1
 and booking_C_1 = 
   [`send of
-    [`Query of [`A] role * string *
-      [`recv of [`Quote of [`A] role * int *
-        booking_C_1]]
-    |`Yes of [`A] role * unit *
+    [`Query of [`A] role * string data *
+      [`recv of [`A] role * [`Quote of int data *
+        booking_C_1 sess]] sess
+    |`Yes of [`A] role * unit data *
       [`send of
-        [`Payment of [`S] role * string *
-          [`recv of [`Ack of [`S] role * unit *
-            booking_C_2]]]]
-    |`No of [`A] role * unit *
-      booking_C_2]]
+        [`Payment of [`S] role * string data *
+          [`recv of [`S] role * [`Ack of unit data *
+            booking_C_2 sess]] sess]] sess
+    |`No of [`A] role * unit data *
+      booking_C_2 sess]]
 and booking_C_2 = 
   [`send of
-    [`Bye of [`A] role * unit *
-      [`close]]]
+    [`Bye of [`A] role * unit data *
+      [`close] sess]]
 type booking_A = booking_A_1
 and booking_A_1 = 
-  [`recv of
-    [`Query of [`C] role * string *
+  [`recv of [`C] role *
+    [`Query of string data *
       [`send of
-        [`Quote of [`C] role * int *
+        [`Quote of [`C] role * int data *
           [`send of
-            [`Dummy of [`S] role * unit *
-              booking_A_1]]]]
-    |`Yes of [`C] role * unit *
+            [`Dummy of [`S] role * unit data *
+              booking_A_1 sess]] sess]] sess
+    |`Yes of unit data *
       [`send of
-        [`Yes of [`S] role * unit *
-          booking_A_2]]
-    |`No of [`C] role * unit *
+        [`Yes of [`S] role * unit data *
+          booking_A_2 sess]] sess
+    |`No of unit data *
       [`send of
-        [`No of [`S] role * unit *
-          booking_A_2]]]]
+        [`No of [`S] role * unit data *
+          booking_A_2 sess]] sess]]
 and booking_A_2 = 
-  [`recv of [`Bye of [`C] role * unit *
-    [`close]]]
+  [`recv of [`C] role * [`Bye of unit data *
+    [`close] sess]]
 type booking_S = booking_S_1
 and booking_S_1 = 
-  [`recv of
-    [`Dummy of [`A] role * unit *
-      booking_S_1
-    |`Yes of [`A] role * unit *
-      [`recv of [`Payment of [`C] role * string *
+  [`recv of [`A] role *
+    [`Dummy of unit data *
+      booking_S_1 sess
+    |`Yes of unit data *
+      [`recv of [`C] role * [`Payment of string data *
         [`send of
-          [`Ack of [`C] role * unit *
-            [`close]]]]]
-    |`No of [`A] role * unit *
-      [`close]]]
+          [`Ack of [`C] role * unit data *
+            [`close] sess]] sess]] sess
+    |`No of unit data *
+      [`close] sess]]
 
 let role_C : [`C] role = Internal.__mkrole "booking_C"
 let role_A : [`A] role = Internal.__mkrole "booking_A"

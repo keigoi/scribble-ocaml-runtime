@@ -4,50 +4,45 @@
 open Multiparty
 type travel
 
-type str = string
-   
 type travel_C = travel_C_1
 and travel_C_1 = 
   [`send of
-    [`msg of [`A] role connect * unit *
-      travel_C_2]]
+    [`msg of [`A] role connect * unit data *
+      travel_C_2 sess]]
 and travel_C_2 = 
   [`send of
-    [`query of [`A] role * str *
-      [`recv of [`quote of [`A] role * int *
-        travel_C_2]]
-    |`msg of [`S] role connect * unit *
-      [`send of
-        [`pay of [`S] role * str *
-          [`recv of [`confirm of [`S] role * int *
-            [`send of
-              [`accpt of [`A] role * int *
-                [`close]]]]]]]
-    |`reject of [`A] role * unit *
-      [`close]]]
+    [`query of [`A] role * unit data *
+      [`recv of [`A] role * [`quote of unit data *
+        travel_C_2 sess]] sess
+    |`pay of [`S] role connect * unit data *
+      [`recv of [`S] role * [`confirm of unit data *
+        [`send of
+          [`accpt of [`A] role * unit data *
+            [`close] sess]] sess]] sess
+    |`reject of [`A] role * unit data *
+      [`close] sess]]
 type travel_A = travel_A_1
 and travel_A_1 = 
-  [`accept of
-    [`msg of [`C] role * unit *
-      travel_A_2]]
+  [`accept of [`C] role *
+    [`msg of unit data *
+      travel_A_2 sess]]
 and travel_A_2 = 
-  [`recv of
-    [`query of [`C] role * str *
+  [`recv of [`C] role *
+    [`query of unit data *
       [`send of
-        [`quote of [`C] role * int *
-          travel_A_2]]
-    |`accpt of [`C] role * int *
-      [`close]
-    |`reject of [`C] role * unit *
-      [`close]]]
+        [`quote of [`C] role * unit data *
+          travel_A_2 sess]] sess
+    |`accpt of unit data *
+      [`close] sess
+    |`reject of unit data *
+      [`close] sess]]
 type travel_S = travel_S_1
 and travel_S_1 = 
-  [`accept of
-    [`msg of [`C] role * unit *
-      [`recv of [`pay of [`C] role * str *
-        [`send of
-          [`confirm of [`C] role * int *
-            [`close]]]]]]]
+  [`accept of [`C] role *
+    [`pay of unit data *
+      [`send of
+        [`confirm of [`C] role * unit data *
+          [`close] sess]] sess]]
 
 let role_C : [`C] role = Internal.__mkrole "travel_C"
 let role_A : [`A] role = Internal.__mkrole "travel_A"

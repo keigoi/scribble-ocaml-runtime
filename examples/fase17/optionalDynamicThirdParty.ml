@@ -7,31 +7,31 @@ type optionalDynamicThirdParty
 type optionalDynamicThirdParty_A = optionalDynamicThirdParty_A_1
 and optionalDynamicThirdParty_A_1 = 
   [`send of
-    [`hello of [`B] role connect * unit *
-      [`recv of [`goodday of [`B] role * unit *
+    [`hello of [`B] role connect * unit data *
+      [`recv of [`B] role * [`goodday of unit data *
         [`send of
-          [`opt1 of [`B] role * unit *
-            [`close]
-          |`opt2 of [`B] role * unit *
-            [`close]]]]]]]
+          [`opt1 of [`B] role * unit data *
+            [`close] sess
+          |`opt2 of [`B] role * unit data *
+            [`close] sess]] sess]] sess]]
 type optionalDynamicThirdParty_B = optionalDynamicThirdParty_B_1
 and optionalDynamicThirdParty_B_1 = 
-  [`accept of
-    [`hello of [`A] role * unit *
+  [`accept of [`A] role *
+    [`hello of unit data *
       [`send of
-        [`goodday of [`A] role * unit *
-          [`recv of
-            [`opt1 of [`A] role * unit *
+        [`goodday of [`A] role * unit data *
+          [`recv of [`A] role *
+            [`opt1 of unit data *
               [`send of
-                [`greetings of [`C] role connect * unit *
-                  [`close]]]
-            |`opt2 of [`A] role * unit *
-              [`close]]]]]]]
+                [`greetings of [`C] role connect * unit data *
+                  [`close] sess]] sess
+            |`opt2 of unit data *
+              [`close] sess]] sess]] sess]]
 type optionalDynamicThirdParty_C = optionalDynamicThirdParty_C_1
 and optionalDynamicThirdParty_C_1 = 
-  [`accept of
-    [`greetings of [`B] role * unit *
-      [`close]]]
+  [`accept of [`B] role *
+    [`greetings of unit data *
+      [`close] sess]]
 
 let role_A : [`A] role = Internal.__mkrole "optionalDynamicThirdParty_A"
 let role_B : [`B] role = Internal.__mkrole "optionalDynamicThirdParty_B"

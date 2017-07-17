@@ -4,28 +4,26 @@
 open Multiparty
 type adder
 
-type integer = int
-
 type adder_C = adder_C_1
 and adder_C_1 = 
   [`send of
-    [`Add of [`S] role * (integer * integer) *
-      [`recv of [`Res of [`S] role * integer *
-        adder_C_1]]
-    |`Bye of [`S] role * unit *
-      [`recv of [`Bye of [`S] role * unit *
-        [`close]]]]]
+    [`Add of [`S] role * (integer * integer) data *
+      [`recv of [`S] role * [`Res of integer data *
+        adder_C_1 sess]] sess
+    |`Bye of [`S] role * unit data *
+      [`recv of [`S] role * [`Bye of unit data *
+        [`close] sess]] sess]]
 type adder_S = adder_S_1
 and adder_S_1 = 
-  [`recv of
-    [`Add of [`C] role * (integer*integer) *
+  [`recv of [`C] role *
+    [`Add of (integer * integer) data *
       [`send of
-        [`Res of [`C] role * integer *
-          adder_S_1]]
-    |`Bye of [`C] role * unit *
+        [`Res of [`C] role * integer data *
+          adder_S_1 sess]] sess
+    |`Bye of unit data *
       [`send of
-        [`Bye of [`C] role * unit *
-          [`close]]]]]
+        [`Bye of [`C] role * unit data *
+          [`close] sess]] sess]]
 
 let role_C : [`C] role = Internal.__mkrole "adder_C"
 let role_S : [`S] role = Internal.__mkrole "adder_S"

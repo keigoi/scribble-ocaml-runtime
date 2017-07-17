@@ -6,52 +6,52 @@ type smtp
 
 type smtp_C = smtp_C_1
 and smtp_C_1 = 
-  [`recv of [`_220 of [`S] role * unit *
+  [`recv of [`S] role * [`_220 of unit data *
     [`send of
-      [`Ehlo of [`S] role * unit *
-        smtp_C_2]]]]
+      [`Ehlo of [`S] role * unit data *
+        smtp_C_2 sess]] sess]]
 and smtp_C_2 = 
-  [`recv of
-    [`_250d of [`S] role * unit *
-      smtp_C_2
-    |`_250 of [`S] role * unit *
+  [`recv of [`S] role *
+    [`_250d of unit data *
+      smtp_C_2 sess
+    |`_250 of unit data *
       [`send of
-        [`StartTls of [`S] role * unit *
-          [`recv of [`_220 of [`S] role * unit *
+        [`StartTls of [`S] role * unit data *
+          [`recv of [`S] role * [`_220 of unit data *
             [`send of
-              [`Ehlo of [`S] role * unit *
-                smtp_C_3]]]]]]]]
+              [`Ehlo of [`S] role * unit data *
+                smtp_C_3 sess]] sess]] sess]] sess]]
 and smtp_C_3 = 
-  [`recv of
-    [`_250d of [`S] role * unit *
-      smtp_C_3
-    |`_250 of [`S] role * unit *
+  [`recv of [`S] role *
+    [`_250d of unit data *
+      smtp_C_3 sess
+    |`_250 of unit data *
       [`send of
-        [`Quit of [`S] role * unit *
-          [`close]]]]]
+        [`Quit of [`S] role * unit data *
+          [`close] sess]] sess]]
 type smtp_S = smtp_S_1
 and smtp_S_1 = 
   [`send of
-    [`_220 of [`C] role * unit *
-      [`recv of [`Ehlo of [`C] role * unit *
-        smtp_S_2]]]]
+    [`_220 of [`C] role * unit data *
+      [`recv of [`C] role * [`Ehlo of unit data *
+        smtp_S_2 sess]] sess]]
 and smtp_S_2 = 
   [`send of
-    [`_250d of [`C] role * unit *
-      smtp_S_2
-    |`_250 of [`C] role * unit *
-      [`recv of [`StartTls of [`C] role * unit *
+    [`_250d of [`C] role * unit data *
+      smtp_S_2 sess
+    |`_250 of [`C] role * unit data *
+      [`recv of [`C] role * [`StartTls of unit data *
         [`send of
-          [`_220 of [`C] role * unit *
-            [`recv of [`Ehlo of [`C] role * unit *
-              smtp_S_3]]]]]]]]
+          [`_220 of [`C] role * unit data *
+            [`recv of [`C] role * [`Ehlo of unit data *
+              smtp_S_3 sess]] sess]] sess]] sess]]
 and smtp_S_3 = 
   [`send of
-    [`_250d of [`C] role * unit *
-      smtp_S_3
-    |`_250 of [`C] role * unit *
-      [`recv of [`Quit of [`C] role * unit *
-        [`close]]]]]
+    [`_250d of [`C] role * unit data *
+      smtp_S_3 sess
+    |`_250 of [`C] role * unit data *
+      [`recv of [`C] role * [`Quit of unit data *
+        [`close] sess]] sess]]
 
 let role_C : [`C] role = Internal.__mkrole "smtp_C"
 let role_S : [`S] role = Internal.__mkrole "smtp_S"

@@ -7,31 +7,31 @@ type mathService
 type mathService_C = mathService_C_1
 and mathService_C_1 = 
   [`send of
-    [`Val of [`S] role * int *
+    [`Val of [`S] role * int data *
       [`send of
-        [`Add of [`S] role * int *
-          [`recv of [`Sum of [`S] role * int *
-            mathService_C_1]]
-        |`Mult of [`S] role * int *
-          [`recv of [`Prod of [`S] role * int *
-            mathService_C_1]]]]
-    |`Bye of [`S] role * unit *
-      [`close]]]
+        [`Add of [`S] role * int data *
+          [`recv of [`S] role * [`Sum of int data *
+            mathService_C_1 sess]] sess
+        |`Mult of [`S] role * int data *
+          [`recv of [`S] role * [`Prod of int data *
+            mathService_C_1 sess]] sess]] sess
+    |`Bye of [`S] role * unit data *
+      [`close] sess]]
 type mathService_S = mathService_S_1
 and mathService_S_1 = 
-  [`recv of
-    [`Val of [`C] role * int *
-      [`recv of
-        [`Add of [`C] role * int *
+  [`recv of [`C] role *
+    [`Val of int data *
+      [`recv of [`C] role *
+        [`Add of int data *
           [`send of
-            [`Sum of [`C] role * int *
-              mathService_S_1]]
-        |`Mult of [`C] role * int *
+            [`Sum of [`C] role * int data *
+              mathService_S_1 sess]] sess
+        |`Mult of int data *
           [`send of
-            [`Prod of [`C] role * int *
-              mathService_S_1]]]]
-    |`Bye of [`C] role * unit *
-      [`close]]]
+            [`Prod of [`C] role * int data *
+              mathService_S_1 sess]] sess]] sess
+    |`Bye of unit data *
+      [`close] sess]]
 
 let role_C : [`C] role = Internal.__mkrole "mathService_C"
 let role_S : [`S] role = Internal.__mkrole "mathService_S"

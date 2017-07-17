@@ -7,33 +7,33 @@ type rPCComp
 type rPCComp_C = rPCComp_C_1
 and rPCComp_C_1 = 
   [`send of
-    [`_1 of [`S1] role * unit *
-      [`recv of [`_1a of [`S1] role * unit *
-        [`close]]]]]
+    [`_1 of [`S1] role * unit data *
+      [`recv of [`S1] role * [`_1a of unit data *
+        [`close] sess]] sess]]
 type rPCComp_S1 = rPCComp_S1_1
 and rPCComp_S1_1 = 
-  [`recv of [`_1 of [`C] role * unit *
+  [`recv of [`C] role * [`_1 of unit data *
     [`send of
-      [`_2 of [`S2] role * unit *
-        [`recv of [`_2a of [`S2] role * unit *
+      [`_2 of [`S2] role * unit data *
+        [`recv of [`S2] role * [`_2a of unit data *
           [`send of
-            [`_3 of [`S3] role * unit *
-              [`recv of [`_3a of [`S3] role * unit *
+            [`_3 of [`S3] role * unit data *
+              [`recv of [`S3] role * [`_3a of unit data *
                 [`send of
-                  [`_1a of [`C] role * unit *
-                    [`close]]]]]]]]]]]]]
+                  [`_1a of [`C] role * unit data *
+                    [`close] sess]] sess]] sess]] sess]] sess]] sess]]
 type rPCComp_S2 = rPCComp_S2_1
 and rPCComp_S2_1 = 
-  [`recv of [`_2 of [`S1] role * unit *
+  [`recv of [`S1] role * [`_2 of unit data *
     [`send of
-      [`_2a of [`S1] role * unit *
-        [`close]]]]]
+      [`_2a of [`S1] role * unit data *
+        [`close] sess]] sess]]
 type rPCComp_S3 = rPCComp_S3_1
 and rPCComp_S3_1 = 
-  [`recv of [`_3 of [`S1] role * unit *
+  [`recv of [`S1] role * [`_3 of unit data *
     [`send of
-      [`_3a of [`S1] role * unit *
-        [`close]]]]]
+      [`_3a of [`S1] role * unit data *
+        [`close] sess]] sess]]
 
 let role_C : [`C] role = Internal.__mkrole "rPCComp_C"
 let role_S1 : [`S1] role = Internal.__mkrole "rPCComp_S1"

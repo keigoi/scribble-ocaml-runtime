@@ -37,8 +37,8 @@ aux global protocol TwoBuyerChoice(role A, role B, role S)
 
 
 // 1 = C, 2 = B
-//global protocol ThreeBuyer(role C, role B)
-global protocol Proto(role C, role B)
+global protocol ThreeBuyer(role C, role B)
+//global protocol Proto(role C, role B)
 {
 	(Int) from B to C;  // Should be same value as the Int on line 19
 	(TwoBuyerChoice@B) from B to C;

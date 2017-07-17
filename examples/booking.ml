@@ -23,7 +23,8 @@ and booking_C_2 =
       [`close] sess]]
 type booking_A = booking_A_1
 and booking_A_1 = 
-  [`recv of [`C] role *     [`Query of string data *
+  [`recv of [`C] role *
+    [`Query of string data *
       [`send of
         [`Quote of [`C] role * int data *
           [`send of
@@ -42,7 +43,8 @@ and booking_A_2 =
     [`close] sess]]
 type booking_S = booking_S_1
 and booking_S_1 = 
-  [`recv of [`A] role *     [`Dummy of unit data *
+  [`recv of [`A] role *
+    [`Dummy of unit data *
       booking_S_1 sess
     |`Yes of unit data *
       [`recv of [`C] role * [`Payment of string data *

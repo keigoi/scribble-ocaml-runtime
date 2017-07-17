@@ -29,9 +29,15 @@ val connect :
   ([ `send of 'br ] sess, 'p sess, 'pre, 'post) slot ->
   'dir role -> ('br, 'dir role connect * 'v data * 'p sess) lab -> 'v -> ('pre, 'post, unit) monad
 
+(** invariant: 'br must be [`tag of 'a * 'b sess] *)
+val accept :
+  ([`accept of 'dir role * 'br] sess, empty, 'pre, 'post) slot
+  -> 'dir role
+  -> ('pre, 'post, 'br) Linocaml.lin_match
+
 val disconnect :
   ([ `disconnect of 'br ] sess, 'p sess, 'pre, 'post) slot ->
-  'dir role -> ('br, 'dir role * unit * 'p sess) lab -> unit -> ('pre, 'post, unit) monad
+  'dir role -> ('br, 'dir role * unit data * 'p sess) lab -> unit -> ('pre, 'post, unit) monad
 
 (** invariant: 'br must be [`tag of 'a * 'b * 'c sess] *)
 val send :
@@ -79,21 +85,3 @@ module Internal : sig
     bindto:(empty, 'p sess, 'pre, 'post) slot ->
     ('pre, 'post, unit) monad
 end
-
-(* val agent : [ `A ] role *)
-(* val client : [ `C ] role *)
-(* val server : [ `S ] role *)
-  
-(* val connect_C : *)
-(*   booking channel -> *)
-(*   bindto:(empty, booking_C sess, 'pre, 'post) slot -> *)
-(*   ('pre, 'post, unit) monad *)
-(* val connect_A : *)
-(*   Multiparty_base.MChan.shared -> *)
-(*   bindto:(empty, 'a sess, 'b, 'c) slot -> *)
-(*   ('b, 'c, unit) monad *)
-(* val accept_S : *)
-(*   Multiparty_base.MChan.shared -> *)
-(*   bindto:(empty, 'a sess, 'b, 'c) slot -> *)
-(*   ('b, 'c, unit) monad *)
-(* val msg_Query : ([> `Query of 'dir * 'v * 'p ], 'dir, 'v, 'p) lab *)

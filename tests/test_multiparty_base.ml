@@ -19,7 +19,7 @@ let test_uchan () =
 let test_mchan () =
   print_endline "test_mchan";
   
-  let shared = MChan.create_connect_first () in
+  let shared = MChan.create () in
   
   let cli (myname,hername,first) =
     print_endline (myname ^ " started.");

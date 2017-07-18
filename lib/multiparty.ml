@@ -3,6 +3,7 @@ open Linocaml
 open Lens
 
 type ('pre,'post,'v) monad = ('pre,'post,'v) Linocaml.monad
+type ('pre,'post,'v) lin_match = ('pre,'post,'v) Linocaml.lin_match
 let (>>=) = Linocaml.(>>=)
 let (>>) = Linocaml.(>>)
 let return = Linocaml.return
@@ -16,8 +17,6 @@ type ('g,'c) channel = 'c MChan.shared
 type 'p sess_  = MChan of MChan.t | Dummy
 type 'p sess = 'p sess_ lin
 
-type _raw_sess = MChan.t
-
 type 'r role = string
 
 type 'a connect = 'a
@@ -30,20 +29,23 @@ let new_channel = MChan.create
 let new_lazy_channel = MChan.create_lazy
 let __new_connect_later_channel roles = MChan.create_later roles
 
-let __initiate : 'pre 'post. myname:string -> [`Explicit] MChan.shared -> bindto:(empty,'p sess,'pre,'post) slot -> ('pre,'post,unit) monad =
-  fun ~myname ch ~bindto ->
-  let s = MChan.initiate ch ~myname in
-  Linocaml.set bindto (MChan s)
+let __initiate : 'c 'p. myname:string -> [`Explicit] MChan.shared -> ('pre,'post,'p sess) lin_match =
+  fun ~myname ch ->
+  Linocaml.lin (fun () ->
+      let s = MChan.initiate ch ~myname in
+      MChan s)
   
-let __connect : 'pre 'post. myname:string -> [`Implicit] MChan.shared -> bindto:(empty,'p sess,'pre,'post) slot -> ('pre,'post,unit) monad =
-  fun ~myname ch ~bindto ->
-  let s = MChan.connect ch ~myname in
-  Linocaml.set bindto (MChan s)
+let __connect : 'c 'p. myname:string -> [`Implicit] MChan.shared -> ('c,'c,'p sess) lin_match =
+  fun ~myname ch ->
+  Linocaml.lin (fun () ->
+      let s = MChan.connect ch ~myname in
+      MChan s)
 
-let __accept : 'pre 'post. myname:string -> cli_count:int -> [`Implicit] MChan.shared -> bindto:(empty,'p sess,'pre,'post) slot -> ('pre,'post,unit) monad =
-  fun ~myname ~cli_count ch ~bindto ->
-  let s = MChan.accept ch ~myname ~cli_count in
-  Linocaml.set bindto (MChan s)
+let __accept : 'c 'p. myname:string -> cli_count:int -> [`Implicit] MChan.shared -> ('c,'c,'p sess) lin_match =
+  fun ~myname ~cli_count ch ->
+  Linocaml.lin (fun () ->
+      let s = MChan.accept ch ~myname ~cli_count in
+      MChan s)
                               
 let connect
     : type br dir v p q pre post.
@@ -68,12 +70,12 @@ let accept
     :  type br dir p pre xx post v.
        ([`accept of dir role * br] sess, empty, pre, post) slot
        -> dir role
-       -> (pre, post, br) lin_match =
+       -> (pre, post, br lin) lin_match =
   fun {get;set} dir ->
   Linocaml.Internal.__match_in2 begin
       fun pre ->
       let s = match get pre with Lin__ (MChan s) -> s | Lin__ Dummy -> failwith "no session -- malformed ppx expansion?? @ __receive" in
-      print_endline (MChan.myname s ^ ": receive from " ^ dir);
+      print_endline (MChan.myname s ^ ": accept from " ^ dir);
       MChan.accept_ongoing s ~from_:dir; (* explicit connection *)
       let uc = MChan.get_connection s ~othername:dir in
       let (br : br)(*polyvar*) = Unsafe.UChan.receive uc in
@@ -144,7 +146,7 @@ let receive
     :  type br dir p pre xx post v.
        ([`recv of dir role * br] sess, empty, pre, post) slot
        -> dir role
-       -> (pre, post, br) lin_match =
+       -> (pre, post, br lin) lin_match =
   fun {get;set} dir ->
   Linocaml.Internal.__match_in2 begin
       fun pre ->

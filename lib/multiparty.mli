@@ -12,9 +12,10 @@ type 'r role
 type ('br, 'payload) lab = {
     _pack : 'payload -> 'br
   }
-type _raw_sess
 
 type ('pre,'post,'a) monad = ('pre,'post,'a) Linocaml.monad
+type ('pre,'post,'v) lin_match = ('pre,'post,'v) Linocaml.lin_match
+
 val return : 'x -> ('p, 'p, 'x) monad
 val (>>=) : ('pre, 'mid, 'a) monad -> ('a -> ('mid, 'post, 'b) monad) -> ('pre, 'post, 'b) monad
 val (>>) : ('pre, 'mid, unit) monad -> ('mid, 'post, 'b) monad -> ('pre, 'post, 'b) monad
@@ -33,7 +34,7 @@ val connect :
 val accept :
   ([`accept of 'dir role * 'br] sess, empty, 'pre, 'post) slot
   -> 'dir role
-  -> ('pre, 'post, 'br) Linocaml.lin_match
+  -> ('pre, 'post, 'br lin) Linocaml.lin_match
 
 val disconnect :
   ([ `disconnect of 'br ] sess, 'p sess, 'pre, 'post) slot ->
@@ -55,7 +56,7 @@ val deleg_send :
 val receive :
   ([`recv of 'dir role * 'br] sess, empty, 'pre, 'post) slot
   -> 'dir role
-  -> ('pre, 'post, 'br) Linocaml.lin_match
+  -> ('pre, 'post, 'br lin) Linocaml.lin_match
 
 val close :
   ([ `close ] sess, empty, 'pre, 'post) slot ->
@@ -69,19 +70,16 @@ module Internal : sig
   val __initiate :
     myname:string ->
     ('g,[`Explicit]) channel ->
-    bindto:(empty, 'p sess, 'pre, 'post) slot ->
-    ('pre, 'post, unit) monad
+    ('c, 'c, 'p sess) lin_match
   
   val __connect :
     myname:string ->
     ('g,[`Implicit]) channel ->
-    bindto:(empty, 'p sess, 'pre, 'post) slot ->
-    ('pre, 'post, unit) monad
+    ('c, 'c, 'p sess) lin_match
   
   val __accept :
     myname:string ->
     cli_count:int ->
     ('g,[`Implicit]) channel ->
-    bindto:(empty, 'p sess, 'pre, 'post) slot ->
-    ('pre, 'post, unit) monad
+    ('c, 'c, 'p sess) lin_match
 end

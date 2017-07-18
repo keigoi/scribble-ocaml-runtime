@@ -28,11 +28,11 @@ and adder_S_1 =
 let role_C : [`C] role = Internal.__mkrole "role_C"
 let role_S : [`S] role = Internal.__mkrole "role_S"
 
-let accept_C : 'pre 'post. (adder,[`Implicit]) channel -> bindto:(empty, adder_C sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let accept_C : 'pre 'post. (adder,[`Implicit]) channel -> ('c, 'c, adder_C sess) lin_match =
   fun ch ->
   Internal.__accept ~myname:"role_C" ~cli_count:1 ch
 
-let connect_S : 'pre 'post. (adder,[`Implicit]) channel -> bindto:(empty, adder_S sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let connect_S : 'pre 'post. (adder,[`Implicit]) channel -> ('c, 'c, adder_S sess) lin_match =
   fun ch ->
   Internal.__connect ~myname:"role_S" ch
 

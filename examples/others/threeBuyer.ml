@@ -1,4 +1,3 @@
-type date = int
 (* Generated from scribble-ocaml https://github.com/keigoi/scribble-ocaml
  * This code should be compiled with session-ocaml (multiparty)
  * https://github.com/keigoi/session-ocaml/tree/multiparty *)
@@ -29,11 +28,11 @@ and threeBuyer_B_1 =
 let role_C : [`C] role = Internal.__mkrole "role_C"
 let role_B : [`B] role = Internal.__mkrole "role_B"
 
-let accept_B : 'pre 'post. (threeBuyer,[`Implicit]) channel -> bindto:(empty, threeBuyer_B sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let accept_B : 'pre 'post. (threeBuyer,[`Implicit]) channel -> ('c, 'c, threeBuyer_B sess) lin_match =
   fun ch ->
   Internal.__accept ~myname:"role_B" ~cli_count:1 ch
 
-let connect_C : 'pre 'post. (threeBuyer,[`Implicit]) channel -> bindto:(empty, threeBuyer_C sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let connect_C : 'pre 'post. (threeBuyer,[`Implicit]) channel -> ('c, 'c, threeBuyer_C sess) lin_match =
   fun ch ->
   Internal.__connect ~myname:"role_C" ch
 

@@ -10,19 +10,19 @@ let ch = new_channel ()
 let gamech = new_lazy_channel ()
    
 let server () =
-  let%slot #t1 = accept_A gamech in
-  let%slot #t2 = connect_B gamech in
-  let%slot #t3 = connect_C gamech in
+  let%lin #t1 = accept_A gamech in
+  let%lin #t2 = connect_B gamech in
+  let%lin #t3 = connect_C gamech in
   
-  let%slot #s = accept_S ch in
+  let%lin #s = accept_S ch in
   deleg_send s role_C msg_playAsA t1 >>
   close s >>
     
-  let%slot #s = accept_S ch in
+  let%lin #s = accept_S ch in
   deleg_send s role_C msg_playAsB t2 >>
   close s >>
     
-  let%slot #s = accept_S ch in
+  let%lin #s = accept_S ch in
   deleg_send s role_C msg_playAsC t3 >>
   close s
 
@@ -30,12 +30,12 @@ let server () =
 let rec playAsA () =
   if Random.int 2 <> 0 then begin
       send t role_B msg_1 () >>
-      match%lin receive t role_C with
-      | `_1(_,#t) -> playAsA ()
+      let%lin `_1(_,#t) = receive t role_C in
+      playAsA ()
     end else begin
       send t role_B msg_2 () >>
-      match%lin receive t role_C with
-      | `_2(_,#t) -> close t
+      let%lin `_2(_,#t) = receive t role_C in
+      close t
     end
 
 let rec playAsB () =
@@ -49,7 +49,7 @@ let rec playAsC () =
   | `_2(_,#t) -> send t role_A msg_2 () >> close t
        
 let client () =
-  let%slot #s = Game2Proto.connect_C ch in
+  let%lin #s = Game2Proto.connect_C ch in
   begin match%lin receive s role_S with
   | `playAsA(#t,#s) -> close s >> playAsA ()
   | `playAsB(#t,#s) -> close s >> playAsB ()

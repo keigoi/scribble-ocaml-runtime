@@ -64,13 +64,13 @@ let role_C : [`C] role = Internal.__mkrole "role_C"
 let role_A : [`A] role = Internal.__mkrole "role_A"
 let role_S : [`S] role = Internal.__mkrole "role_S"
 
-let initiate_C : 'pre 'post. (travel2,[`Explicit]) channel -> bindto:(empty, travel2_C sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let initiate_C : 'pre 'post. (travel2,[`Explicit]) channel -> ('c, 'c, travel2_C sess) lin_match =
   fun ch ->
   Internal.__initiate ~myname:"role_C" ch
-let initiate_A : 'pre 'post. (travel2,[`Explicit]) channel -> bindto:(empty, travel2_A sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let initiate_A : 'pre 'post. (travel2,[`Explicit]) channel -> ('c, 'c, travel2_A sess) lin_match =
   fun ch ->
   Internal.__initiate ~myname:"role_A" ch
-let initiate_S : 'pre 'post. (travel2,[`Explicit]) channel -> bindto:(empty, travel2_S sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let initiate_S : 'pre 'post. (travel2,[`Explicit]) channel -> ('c, 'c, travel2_S sess) lin_match =
   fun ch ->
   Internal.__initiate ~myname:"role_S" ch
 

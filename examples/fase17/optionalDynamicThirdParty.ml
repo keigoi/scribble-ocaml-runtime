@@ -37,13 +37,13 @@ let role_A : [`A] role = Internal.__mkrole "role_A"
 let role_B : [`B] role = Internal.__mkrole "role_B"
 let role_C : [`C] role = Internal.__mkrole "role_C"
 
-let initiate_A : 'pre 'post. (optionalDynamicThirdParty,[`Explicit]) channel -> bindto:(empty, optionalDynamicThirdParty_A sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let initiate_A : 'pre 'post. (optionalDynamicThirdParty,[`Explicit]) channel -> ('c, 'c, optionalDynamicThirdParty_A sess) lin_match =
   fun ch ->
   Internal.__initiate ~myname:"role_A" ch
-let initiate_B : 'pre 'post. (optionalDynamicThirdParty,[`Explicit]) channel -> bindto:(empty, optionalDynamicThirdParty_B sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let initiate_B : 'pre 'post. (optionalDynamicThirdParty,[`Explicit]) channel -> ('c, 'c, optionalDynamicThirdParty_B sess) lin_match =
   fun ch ->
   Internal.__initiate ~myname:"role_B" ch
-let initiate_C : 'pre 'post. (optionalDynamicThirdParty,[`Explicit]) channel -> bindto:(empty, optionalDynamicThirdParty_C sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let initiate_C : 'pre 'post. (optionalDynamicThirdParty,[`Explicit]) channel -> ('c, 'c, optionalDynamicThirdParty_C sess) lin_match =
   fun ch ->
   Internal.__initiate ~myname:"role_C" ch
 

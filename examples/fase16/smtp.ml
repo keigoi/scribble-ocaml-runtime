@@ -56,11 +56,11 @@ and smtp_S_3 =
 let role_C : [`C] role = Internal.__mkrole "role_C"
 let role_S : [`S] role = Internal.__mkrole "role_S"
 
-let accept_S : 'pre 'post. (smtp,[`Implicit]) channel -> bindto:(empty, smtp_S sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let accept_S : 'pre 'post. (smtp,[`Implicit]) channel -> ('c, 'c, smtp_S sess) lin_match =
   fun ch ->
   Internal.__accept ~myname:"role_S" ~cli_count:1 ch
 
-let connect_C : 'pre 'post. (smtp,[`Implicit]) channel -> bindto:(empty, smtp_C sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let connect_C : 'pre 'post. (smtp,[`Implicit]) channel -> ('c, 'c, smtp_C sess) lin_match =
   fun ch ->
   Internal.__connect ~myname:"role_C" ch
 

@@ -24,14 +24,14 @@ let role_R1 : [`R1] role = Internal.__mkrole "role_R1"
 let role_R2 : [`R2] role = Internal.__mkrole "role_R2"
 let role_R3 : [`R3] role = Internal.__mkrole "role_R3"
 
-let accept_R1 : 'pre 'post. (relay,[`Implicit]) channel -> bindto:(empty, relay_R1 sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let accept_R1 : 'pre 'post. (relay,[`Implicit]) channel -> ('c, 'c, relay_R1 sess) lin_match =
   fun ch ->
   Internal.__accept ~myname:"role_R1" ~cli_count:2 ch
 
-let connect_R2 : 'pre 'post. (relay,[`Implicit]) channel -> bindto:(empty, relay_R2 sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let connect_R2 : 'pre 'post. (relay,[`Implicit]) channel -> ('c, 'c, relay_R2 sess) lin_match =
   fun ch ->
   Internal.__connect ~myname:"role_R2" ch
-let connect_R3 : 'pre 'post. (relay,[`Implicit]) channel -> bindto:(empty, relay_R3 sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let connect_R3 : 'pre 'post. (relay,[`Implicit]) channel -> ('c, 'c, relay_R3 sess) lin_match =
   fun ch ->
   Internal.__connect ~myname:"role_R3" ch
 

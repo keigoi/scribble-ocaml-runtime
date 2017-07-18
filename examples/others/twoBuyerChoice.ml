@@ -1,4 +1,3 @@
-type date = int
 (* Generated from scribble-ocaml https://github.com/keigoi/scribble-ocaml
  * This code should be compiled with session-ocaml (multiparty)
  * https://github.com/keigoi/session-ocaml/tree/multiparty *)
@@ -38,14 +37,14 @@ let role_A : [`A] role = Internal.__mkrole "role_A"
 let role_B : [`B] role = Internal.__mkrole "role_B"
 let role_S : [`S] role = Internal.__mkrole "role_S"
 
-let accept_B : 'pre 'post. (twoBuyerChoice,[`Implicit]) channel -> bindto:(empty, twoBuyerChoice_B sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let accept_B : 'pre 'post. (twoBuyerChoice,[`Implicit]) channel -> ('c, 'c, twoBuyerChoice_B sess) lin_match =
   fun ch ->
   Internal.__accept ~myname:"role_B" ~cli_count:2 ch
 
-let connect_A : 'pre 'post. (twoBuyerChoice,[`Implicit]) channel -> bindto:(empty, twoBuyerChoice_A sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let connect_A : 'pre 'post. (twoBuyerChoice,[`Implicit]) channel -> ('c, 'c, twoBuyerChoice_A sess) lin_match =
   fun ch ->
   Internal.__connect ~myname:"role_A" ch
-let connect_S : 'pre 'post. (twoBuyerChoice,[`Implicit]) channel -> bindto:(empty, twoBuyerChoice_S sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let connect_S : 'pre 'post. (twoBuyerChoice,[`Implicit]) channel -> ('c, 'c, twoBuyerChoice_S sess) lin_match =
   fun ch ->
   Internal.__connect ~myname:"role_S" ch
 

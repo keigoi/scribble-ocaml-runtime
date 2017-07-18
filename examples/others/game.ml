@@ -40,14 +40,14 @@ let role_A : [`A] role = Internal.__mkrole "role_A"
 let role_B : [`B] role = Internal.__mkrole "role_B"
 let role_C : [`C] role = Internal.__mkrole "role_C"
 
-let accept_A : 'pre 'post. (game,[`Implicit]) channel -> bindto:(empty, game_A sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let accept_A : 'pre 'post. (game,[`Implicit]) channel -> ('c, 'c, game_A sess) lin_match =
   fun ch ->
   Internal.__accept ~myname:"role_A" ~cli_count:2 ch
 
-let connect_B : 'pre 'post. (game,[`Implicit]) channel -> bindto:(empty, game_B sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let connect_B : 'pre 'post. (game,[`Implicit]) channel -> ('c, 'c, game_B sess) lin_match =
   fun ch ->
   Internal.__connect ~myname:"role_B" ch
-let connect_C : 'pre 'post. (game,[`Implicit]) channel -> bindto:(empty, game_C sess, 'pre, 'post) slot -> ('pre,'post,unit) monad =
+let connect_C : 'pre 'post. (game,[`Implicit]) channel -> ('c, 'c, game_C sess) lin_match =
   fun ch ->
   Internal.__connect ~myname:"role_C" ch
 

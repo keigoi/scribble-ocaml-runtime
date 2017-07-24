@@ -13,12 +13,12 @@ let proc_a () =
   let rec loop () =
     if Random.int 2 <> 0 then begin
         connect s role_B msg_1 () >>
-        disconnect s role_B msg_none () >>=
-        loop
+        disconnect s role_B msg_none () >>
+        loop ()
       end else begin
         connect s role_C msg_2 () >>
-        disconnect s role_C msg_none () >>=
-        loop
+        disconnect s role_C msg_none () >>
+        loop ()
       end
   in
   loop ()
@@ -42,6 +42,6 @@ let proc_c () =
   loop ()
 
 let () =
-  ignore @@ Thread.create (fun _ -> run_ctx (proc_b ())) ();
-  ignore @@ Thread.create (fun _ -> run_ctx (proc_c ())) ();
-  run_ctx (proc_a ())
+  ignore @@ Thread.create (run_ctx proc_b) ();
+  ignore @@ Thread.create (run_ctx proc_c) ();
+  run_ctx proc_a ()

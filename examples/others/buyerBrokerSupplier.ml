@@ -50,17 +50,17 @@ let role_ApplicationPortal : [`ApplicationPortal] role = Internal.__mkrole "role
 let role_ProcessingDept : [`ProcessingDept] role = Internal.__mkrole "role_ProcessingDept"
 let role_FinanceDept : [`FinanceDept] role = Internal.__mkrole "role_FinanceDept"
 
-let accept_Applicant : 'pre 'post. (buyerBrokerSupplier,[`Implicit]) channel -> ('c, 'c, buyerBrokerSupplier_Applicant sess) lin_match =
+let accept_Applicant : 'pre 'post. (buyerBrokerSupplier,[`Implicit]) channel -> ('c, 'c, buyerBrokerSupplier_Applicant sess) monad =
   fun ch ->
   Internal.__accept ~myname:"role_Applicant" ~cli_count:3 ch
 
-let connect_ApplicationPortal : 'pre 'post. (buyerBrokerSupplier,[`Implicit]) channel -> ('c, 'c, buyerBrokerSupplier_ApplicationPortal sess) lin_match =
+let connect_ApplicationPortal : 'pre 'post. (buyerBrokerSupplier,[`Implicit]) channel -> ('c, 'c, buyerBrokerSupplier_ApplicationPortal sess) monad =
   fun ch ->
   Internal.__connect ~myname:"role_ApplicationPortal" ch
-let connect_ProcessingDept : 'pre 'post. (buyerBrokerSupplier,[`Implicit]) channel -> ('c, 'c, buyerBrokerSupplier_ProcessingDept sess) lin_match =
+let connect_ProcessingDept : 'pre 'post. (buyerBrokerSupplier,[`Implicit]) channel -> ('c, 'c, buyerBrokerSupplier_ProcessingDept sess) monad =
   fun ch ->
   Internal.__connect ~myname:"role_ProcessingDept" ch
-let connect_FinanceDept : 'pre 'post. (buyerBrokerSupplier,[`Implicit]) channel -> ('c, 'c, buyerBrokerSupplier_FinanceDept sess) lin_match =
+let connect_FinanceDept : 'pre 'post. (buyerBrokerSupplier,[`Implicit]) channel -> ('c, 'c, buyerBrokerSupplier_FinanceDept sess) monad =
   fun ch ->
   Internal.__connect ~myname:"role_FinanceDept" ch
 

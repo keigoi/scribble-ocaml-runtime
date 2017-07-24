@@ -72,14 +72,14 @@ let role_Client : [`Client] role = Internal.__mkrole "role_Client"
 let role_S1 : [`S1] role = Internal.__mkrole "role_S1"
 let role_S2 : [`S2] role = Internal.__mkrole "role_S2"
 
-let accept_S1 : 'pre 'post. (game1Proto,[`Implicit]) channel -> ('c, 'c, game1Proto_S1 sess) lin_match =
+let accept_S1 : 'pre 'post. (game1Proto,[`Implicit]) channel -> ('c, 'c, game1Proto_S1 sess) monad =
   fun ch ->
   Internal.__accept ~myname:"role_S1" ~cli_count:2 ch
 
-let connect_Client : 'pre 'post. (game1Proto,[`Implicit]) channel -> ('c, 'c, game1Proto_Client sess) lin_match =
+let connect_Client : 'pre 'post. (game1Proto,[`Implicit]) channel -> ('c, 'c, game1Proto_Client sess) monad =
   fun ch ->
   Internal.__connect ~myname:"role_Client" ch
-let connect_S2 : 'pre 'post. (game1Proto,[`Implicit]) channel -> ('c, 'c, game1Proto_S2 sess) lin_match =
+let connect_S2 : 'pre 'post. (game1Proto,[`Implicit]) channel -> ('c, 'c, game1Proto_S2 sess) monad =
   fun ch ->
   Internal.__connect ~myname:"role_S2" ch
 

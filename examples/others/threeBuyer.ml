@@ -28,11 +28,11 @@ and threeBuyer_B_1 =
 let role_C : [`C] role = Internal.__mkrole "role_C"
 let role_B : [`B] role = Internal.__mkrole "role_B"
 
-let accept_B : 'pre 'post. (threeBuyer,[`Implicit]) channel -> ('c, 'c, threeBuyer_B sess) lin_match =
+let accept_B : 'pre 'post. (threeBuyer,[`Implicit]) channel -> ('c, 'c, threeBuyer_B sess) monad =
   fun ch ->
   Internal.__accept ~myname:"role_B" ~cli_count:1 ch
 
-let connect_C : 'pre 'post. (threeBuyer,[`Implicit]) channel -> ('c, 'c, threeBuyer_C sess) lin_match =
+let connect_C : 'pre 'post. (threeBuyer,[`Implicit]) channel -> ('c, 'c, threeBuyer_C sess) monad =
   fun ch ->
   Internal.__connect ~myname:"role_C" ch
 

@@ -24,14 +24,14 @@ let role_A : [`A] role = Internal.__mkrole "role_A"
 let role_B : [`B] role = Internal.__mkrole "role_B"
 let role_C : [`C] role = Internal.__mkrole "role_C"
 
-let accept_A : 'pre 'post. (myRelay,[`Implicit]) channel -> ('c, 'c, myRelay_A sess) lin_match =
+let accept_A : 'pre 'post. (myRelay,[`Implicit]) channel -> ('c, 'c, myRelay_A sess) monad =
   fun ch ->
   Internal.__accept ~myname:"role_A" ~cli_count:2 ch
 
-let connect_B : 'pre 'post. (myRelay,[`Implicit]) channel -> ('c, 'c, myRelay_B sess) lin_match =
+let connect_B : 'pre 'post. (myRelay,[`Implicit]) channel -> ('c, 'c, myRelay_B sess) monad =
   fun ch ->
   Internal.__connect ~myname:"role_B" ch
-let connect_C : 'pre 'post. (myRelay,[`Implicit]) channel -> ('c, 'c, myRelay_C sess) lin_match =
+let connect_C : 'pre 'post. (myRelay,[`Implicit]) channel -> ('c, 'c, myRelay_C sess) monad =
   fun ch ->
   Internal.__connect ~myname:"role_C" ch
 

@@ -51,8 +51,8 @@ let travel_s () =
     
 let () =
   Random.self_init ();
-  ignore @@ Thread.create (fun _ -> run_ctx (travel_a ())) ();
-  ignore @@ Thread.create (fun _ -> run_ctx (travel_s ())) ();
-  run_ctx (travel_c ())
+  ignore @@ Thread.create (run_ctx travel_a) ();
+  ignore @@ Thread.create (run_ctx travel_s) ();
+  run_ctx travel_c ()
   
              

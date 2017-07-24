@@ -36,11 +36,11 @@ and mathService_S_1 =
 let role_C : [`C] role = Internal.__mkrole "role_C"
 let role_S : [`S] role = Internal.__mkrole "role_S"
 
-let accept_C : 'pre 'post. (mathService,[`Implicit]) channel -> ('c, 'c, mathService_C sess) lin_match =
+let accept_C : 'pre 'post. (mathService,[`Implicit]) channel -> ('c, 'c, mathService_C sess) monad =
   fun ch ->
   Internal.__accept ~myname:"role_C" ~cli_count:1 ch
 
-let connect_S : 'pre 'post. (mathService,[`Implicit]) channel -> ('c, 'c, mathService_S sess) lin_match =
+let connect_S : 'pre 'post. (mathService,[`Implicit]) channel -> ('c, 'c, mathService_S sess) monad =
   fun ch ->
   Internal.__connect ~myname:"role_S" ch
 

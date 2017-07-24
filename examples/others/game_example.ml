@@ -59,10 +59,10 @@ let client () =
 
 let () =
   Random.self_init ();
-  let t1 = Thread.create (fun () -> run_ctx (client ())) () in
-  let t2 = Thread.create (fun () -> run_ctx (client ())) () in
-  let t3 = Thread.create (fun () -> run_ctx (client ())) () in
-  run_ctx (server ());
+  let t1 = Thread.create (run_ctx client) () in
+  let t2 = Thread.create (run_ctx client) () in
+  let t3 = Thread.create (run_ctx client) () in
+  run_ctx server ();
   Thread.join t1;
   Thread.join t2;
   Thread.join t3;

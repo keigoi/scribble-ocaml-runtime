@@ -3,6 +3,7 @@
  * https://github.com/keigoi/session-ocaml/tree/multiparty *)
 open Multiparty
 type twoBuyer
+type date = int
 
 type twoBuyer_A = twoBuyer_A_1
 and twoBuyer_A_1 = 
@@ -49,14 +50,14 @@ let role_A : [`A] role = Internal.__mkrole "role_A"
 let role_B : [`B] role = Internal.__mkrole "role_B"
 let role_S : [`S] role = Internal.__mkrole "role_S"
 
-let accept_A : 'pre 'post. (twoBuyer,[`Implicit]) channel -> ('c, 'c, twoBuyer_A sess) lin_match =
+let accept_A : 'pre 'post. (twoBuyer,[`Implicit]) channel -> ('c, 'c, twoBuyer_A sess) monad =
   fun ch ->
   Internal.__accept ~myname:"role_A" ~cli_count:2 ch
 
-let connect_B : 'pre 'post. (twoBuyer,[`Implicit]) channel -> ('c, 'c, twoBuyer_B sess) lin_match =
+let connect_B : 'pre 'post. (twoBuyer,[`Implicit]) channel -> ('c, 'c, twoBuyer_B sess) monad =
   fun ch ->
   Internal.__connect ~myname:"role_B" ch
-let connect_S : 'pre 'post. (twoBuyer,[`Implicit]) channel -> ('c, 'c, twoBuyer_S sess) lin_match =
+let connect_S : 'pre 'post. (twoBuyer,[`Implicit]) channel -> ('c, 'c, twoBuyer_S sess) monad =
   fun ch ->
   Internal.__connect ~myname:"role_S" ch
 

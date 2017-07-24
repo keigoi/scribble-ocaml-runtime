@@ -1,0 +1,9 @@
+module Test_Test_C;
+
+local protocol Test_C(role A, role C) {
+  choice at A {
+    Hello() from A;
+  } or {
+    AtoC() from A;
+  }
+}

@@ -1,0 +1,29 @@
+module travel.Travel_Travel_A;
+type <java> java.lang.Integer from java.lang.Integer as Int;
+type <java> java.lang.String from java.lang.String as String;
+
+local protocol Travel_A(role C, role A, role S) {
+
+  choice at C {
+  
+    Query(String) from C;
+    Quote(Int) to C;
+    Dummy() to S;
+    do travel.Travel_Travel_A.Travel_A(C, A, S);
+    
+  } or {
+  
+    choice at C {
+    
+      Yes() from C;
+      Yes() to S;
+      
+    } or {
+    
+      No() from C;
+      No() to S;
+      
+    }
+    Bye() from C;
+  }
+}

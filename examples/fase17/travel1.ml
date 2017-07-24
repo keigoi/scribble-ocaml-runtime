@@ -51,13 +51,13 @@ let role_C : [`C] role = Internal.__mkrole "role_C"
 let role_A : [`A] role = Internal.__mkrole "role_A"
 let role_S : [`S] role = Internal.__mkrole "role_S"
 
-let initiate_C : 'pre 'post. (travel1,[`Explicit]) channel -> ('c, 'c, travel1_C sess) lin_match =
+let initiate_C : 'pre 'post. (travel1,[`Explicit]) channel -> ('c, 'c, travel1_C sess) monad =
   fun ch ->
   Internal.__initiate ~myname:"role_C" ch
-let initiate_A : 'pre 'post. (travel1,[`Explicit]) channel -> ('c, 'c, travel1_A sess) lin_match =
+let initiate_A : 'pre 'post. (travel1,[`Explicit]) channel -> ('c, 'c, travel1_A sess) monad =
   fun ch ->
   Internal.__initiate ~myname:"role_A" ch
-let initiate_S : 'pre 'post. (travel1,[`Explicit]) channel -> ('c, 'c, travel1_S sess) lin_match =
+let initiate_S : 'pre 'post. (travel1,[`Explicit]) channel -> ('c, 'c, travel1_S sess) monad =
   fun ch ->
   Internal.__initiate ~myname:"role_S" ch
 

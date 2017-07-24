@@ -57,16 +57,16 @@ let role_ApplicationPortal : [`ApplicationPortal] role = Internal.__mkrole "role
 let role_ProcessingDept : [`ProcessingDept] role = Internal.__mkrole "role_ProcessingDept"
 let role_FinanceDept : [`FinanceDept] role = Internal.__mkrole "role_FinanceDept"
 
-let initiate_Applicant : 'pre 'post. (bBSOriginal,[`Explicit]) channel -> ('c, 'c, bBSOriginal_Applicant sess) lin_match =
+let initiate_Applicant : 'pre 'post. (bBSOriginal,[`Explicit]) channel -> ('c, 'c, bBSOriginal_Applicant sess) monad =
   fun ch ->
   Internal.__initiate ~myname:"role_Applicant" ch
-let initiate_ApplicationPortal : 'pre 'post. (bBSOriginal,[`Explicit]) channel -> ('c, 'c, bBSOriginal_ApplicationPortal sess) lin_match =
+let initiate_ApplicationPortal : 'pre 'post. (bBSOriginal,[`Explicit]) channel -> ('c, 'c, bBSOriginal_ApplicationPortal sess) monad =
   fun ch ->
   Internal.__initiate ~myname:"role_ApplicationPortal" ch
-let initiate_ProcessingDept : 'pre 'post. (bBSOriginal,[`Explicit]) channel -> ('c, 'c, bBSOriginal_ProcessingDept sess) lin_match =
+let initiate_ProcessingDept : 'pre 'post. (bBSOriginal,[`Explicit]) channel -> ('c, 'c, bBSOriginal_ProcessingDept sess) monad =
   fun ch ->
   Internal.__initiate ~myname:"role_ProcessingDept" ch
-let initiate_FinanceDept : 'pre 'post. (bBSOriginal,[`Explicit]) channel -> ('c, 'c, bBSOriginal_FinanceDept sess) lin_match =
+let initiate_FinanceDept : 'pre 'post. (bBSOriginal,[`Explicit]) channel -> ('c, 'c, bBSOriginal_FinanceDept sess) monad =
   fun ch ->
   Internal.__initiate ~myname:"role_FinanceDept" ch
 

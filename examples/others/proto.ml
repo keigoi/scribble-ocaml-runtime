@@ -40,17 +40,17 @@ let role_S1 : [`S1] role = Internal.__mkrole "role_S1"
 let role_S2 : [`S2] role = Internal.__mkrole "role_S2"
 let role_S3 : [`S3] role = Internal.__mkrole "role_S3"
 
-let accept_C : 'pre 'post. (proto,[`Implicit]) channel -> ('c, 'c, proto_C sess) lin_match =
+let accept_C : 'pre 'post. (proto,[`Implicit]) channel -> ('c, 'c, proto_C sess) monad =
   fun ch ->
   Internal.__accept ~myname:"role_C" ~cli_count:3 ch
 
-let connect_S1 : 'pre 'post. (proto,[`Implicit]) channel -> ('c, 'c, proto_S1 sess) lin_match =
+let connect_S1 : 'pre 'post. (proto,[`Implicit]) channel -> ('c, 'c, proto_S1 sess) monad =
   fun ch ->
   Internal.__connect ~myname:"role_S1" ch
-let connect_S2 : 'pre 'post. (proto,[`Implicit]) channel -> ('c, 'c, proto_S2 sess) lin_match =
+let connect_S2 : 'pre 'post. (proto,[`Implicit]) channel -> ('c, 'c, proto_S2 sess) monad =
   fun ch ->
   Internal.__connect ~myname:"role_S2" ch
-let connect_S3 : 'pre 'post. (proto,[`Implicit]) channel -> ('c, 'c, proto_S3 sess) lin_match =
+let connect_S3 : 'pre 'post. (proto,[`Implicit]) channel -> ('c, 'c, proto_S3 sess) monad =
   fun ch ->
   Internal.__connect ~myname:"role_S3" ch
 

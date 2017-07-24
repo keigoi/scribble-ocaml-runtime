@@ -1,0 +1,9 @@
+module Test_Test_B;
+
+local protocol Test_B(role A, role B) {
+  choice at A {
+    AtoB() from A;
+  } or {
+    AtoB() from A;
+  }
+}

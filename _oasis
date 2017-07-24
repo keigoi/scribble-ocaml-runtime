@@ -1,14 +1,13 @@
 OASISFormat: 0.4
-Name:        session-ocaml
+Name:        scribble-ocaml-runtime
 Version:     0.1
-Homepage:    http://www.ct.info.gifu-u.ac.jp/~keigoi/session-ocaml/
-Synopsis:    A concurrent / distributed programming with protocol typing,
-  based on Session Types.
+Homepage:    https://github.com/keigoi/scribble-ocaml-runtime
+Synopsis:    A runtime for scribble-ocaml 
 Authors:     Keigo Imai
-License:     LGPL-2.1 with OCaml linking exception
+License:     Apache
 Plugins:     META (0.4), DevFiles (0.4)
 
-Library "session-ocaml"
+Library "scribble-ocaml-runtime"
   Path:       lib
   BuildTools: ocamlbuild
   Modules:
@@ -24,5 +23,5 @@ Executable "test_multiparty"
   Install: false
   ByteOpt: -linkall
   NativeOpt: -linkall
-  BuildDepends: session-ocaml, oUnit
+  BuildDepends: scribble-ocaml-runtime, oUnit
   CompiledObject: best

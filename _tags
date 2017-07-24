@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: a7065cd36f9c2438af6ff81a03b9c12b)
+# DO NOT EDIT (digest: 3f9d91bfb026f3e6c8a7ea8851c6632e)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -14,8 +14,8 @@ true: annot, bin_annot
 ".git": not_hygienic
 "_darcs": -traverse
 "_darcs": not_hygienic
-# Library session-ocaml
-"lib/session-ocaml.cmxs": use_session-ocaml
+# Library scribble-ocaml-runtime
+"lib/scribble-ocaml-runtime.cmxs": use_scribble-ocaml-runtime
 <lib/*.ml{,i,y}>: pkg_linocaml
 <lib/*.ml{,i,y}>: pkg_str
 <lib/*.ml{,i,y}>: pkg_threads
@@ -28,12 +28,12 @@ true: annot, bin_annot
 <tests/test_multiparty_base.{native,byte}>: pkg_oUnit
 <tests/test_multiparty_base.{native,byte}>: pkg_str
 <tests/test_multiparty_base.{native,byte}>: pkg_threads
-<tests/test_multiparty_base.{native,byte}>: use_session-ocaml
+<tests/test_multiparty_base.{native,byte}>: use_scribble-ocaml-runtime
 <tests/*.ml{,i,y}>: pkg_linocaml
 <tests/*.ml{,i,y}>: pkg_oUnit
 <tests/*.ml{,i,y}>: pkg_str
 <tests/*.ml{,i,y}>: pkg_threads
-<tests/*.ml{,i,y}>: use_session-ocaml
+<tests/*.ml{,i,y}>: use_scribble-ocaml-runtime
 # OASIS_STOP
 
 "examples": not_hygienic

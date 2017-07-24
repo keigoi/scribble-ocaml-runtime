@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: c0e8a0e5e3cea3ea03d9c33eefeae6c8) *)
+(* DO NOT EDIT (digest: 4f4f27c377f4e9333ab41427586520da) *)
 module OASISGettext = struct
 (* # 22 "src/oasis/OASISGettext.ml" *)
 
@@ -885,7 +885,7 @@ end
 open Ocamlbuild_plugin;;
 let package_default =
   {
-     MyOCamlbuildBase.lib_ocaml = [("session-ocaml", ["lib"], [])];
+     MyOCamlbuildBase.lib_ocaml = [("scribble-ocaml-runtime", ["lib"], [])];
      lib_c = [];
      flags =
        [

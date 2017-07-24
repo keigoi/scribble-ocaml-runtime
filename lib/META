@@ -1,13 +1,12 @@
 # OASIS_START
-# DO NOT EDIT (digest: 18ee09a9c89c0863f7c77383b9f987ac)
+# DO NOT EDIT (digest: 45548db7957859e900a966adf2e62b37)
 version = "0.1"
-description =
-"A concurrent / distributed programming with protocol typing, based on Session Types."
+description = "A runtime for scribble-ocaml"
 requires = "threads str linocaml"
-archive(byte) = "session-ocaml.cma"
-archive(byte, plugin) = "session-ocaml.cma"
-archive(native) = "session-ocaml.cmxa"
-archive(native, plugin) = "session-ocaml.cmxs"
-exists_if = "session-ocaml.cma"
+archive(byte) = "scribble-ocaml-runtime.cma"
+archive(byte, plugin) = "scribble-ocaml-runtime.cma"
+archive(native) = "scribble-ocaml-runtime.cmxa"
+archive(native, plugin) = "scribble-ocaml-runtime.cmxs"
+exists_if = "scribble-ocaml-runtime.cma"
 # OASIS_STOP
 

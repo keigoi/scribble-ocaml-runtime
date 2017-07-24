@@ -1,9 +1,8 @@
 (* Generated from scribble-ocaml https://github.com/keigoi/scribble-ocaml
- * This code should be compiled with session-ocaml (multiparty)
- * https://github.com/keigoi/session-ocaml/tree/multiparty *)
+ * This code should be compiled with scribble-ocaml-runtime
+ * https://github.com/keigoi/scribble-ocaml-runtime *)
 open Multiparty
 type twoBuyerChoice
-type date = int
 
 type twoBuyerChoice_A = twoBuyerChoice_A_1
 and twoBuyerChoice_A_1 = 

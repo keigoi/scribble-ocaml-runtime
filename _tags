@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 3f9d91bfb026f3e6c8a7ea8851c6632e)
+# DO NOT EDIT (digest: 4901d621fc977ccdf81d2ca0a8c9ae4f)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -16,6 +16,12 @@ true: annot, bin_annot
 "_darcs": not_hygienic
 # Library scribble-ocaml-runtime
 "lib/scribble-ocaml-runtime.cmxs": use_scribble-ocaml-runtime
+"lib/base.cmx": for-pack(Scribble-ocaml-runtime)
+"lib/endpoint.cmx": for-pack(Scribble-ocaml-runtime)
+"lib/formatter.cmx": for-pack(Scribble-ocaml-runtime)
+"lib/session.cmx": for-pack(Scribble-ocaml-runtime)
+"lib/direct.cmx": for-pack(Scribble-ocaml-runtime)
+"lib/unsafe.cmx": for-pack(Scribble-ocaml-runtime)
 <lib/*.ml{,i,y}>: pkg_linocaml
 <lib/*.ml{,i,y}>: pkg_str
 <lib/*.ml{,i,y}>: pkg_threads

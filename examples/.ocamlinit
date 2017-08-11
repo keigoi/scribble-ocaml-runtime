@@ -7,5 +7,6 @@ let () =
 #thread;;
 #require "linocaml.ppx";;
 #require "linocaml.ppx_lens";;
+#require "scribble-ocaml-runtime";;
 
 open Multiparty;;

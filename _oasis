@@ -6,14 +6,15 @@ Synopsis:    A runtime for scribble-ocaml
 Authors:     Keigo Imai
 License:     Apache
 Plugins:     META (0.4), DevFiles (0.4)
+BuildTools: ocamlbuild
 
 Library "scribble-ocaml-runtime"
   Path:       lib
-  BuildTools: ocamlbuild
+  Pack: true
   Modules:
-    Multiparty
+    Base, Endpoint, Formatter, Session, Direct
   InternalModules:
-    Channel, Monitor, Unsafe, Multiparty_base
+    Unsafe
   BuildDepends: threads, str, linocaml
 
 Executable "test_multiparty"

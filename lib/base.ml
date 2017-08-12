@@ -1,41 +1,33 @@
 
-type role = string
-          
 type ('br, 'payload) lab = {
     _pack : 'payload -> 'br
   }
 
-module type BINARY = sig
-  type +'a io
-  type t
-  val send : t -> 'a -> unit io
-  val receive : t -> 'a io
-  val close : t -> unit io
-end
-
-module type BINARY_CONN = sig
-  module Binary : BINARY
-  val conn : Binary.t
-end
-
 module type ENDPOINT = sig
   module LinIO : Linocaml.Base.LIN_IO
   module IO = LinIO.IO
-       
-  module type BINARY_CONN = BINARY_CONN with type 'a Binary.io = 'a IO.io
-  type conn = (module BINARY_CONN)
+            
+  type 'c conn = {conn : 'c;
+                  send    : 'a. 'c -> 'a -> unit IO.io;
+                  receive : 'a. 'c -> 'a IO.io;
+                  close   : 'c -> unit IO.io}
 
-  type 'g connector = unit -> conn IO.io
-  type 'g acceptor  = unit -> conn IO.io
+  type 'c connector = unit -> 'c conn IO.io
+  type 'c acceptor  = unit -> 'c conn IO.io
 
-  type t = {self: role; role2bin : (string, conn) Hashtbl.t}
-  val init : role -> t IO.io
-  val myname : t -> role
-  val connect : t -> role -> 'g connector -> unit IO.io
-  val accept : t -> role -> 'g acceptor -> unit IO.io
-  val attach : t -> role -> conn -> unit
-  val detach : t -> role -> conn
-  val get_connection : t -> othername:role -> conn
+  type 'c rolekind
+  type 'c role
+  val string_of_role : 'c conn role -> string
+  val make_role : 'c rolekind -> string -> 'c conn role
+
+  type t
+  val init : string -> t IO.io
+  val myname : t -> string
+  val connect : t -> 'c conn role -> 'c connector -> unit IO.io
+  val accept : t -> 'c conn role -> 'c acceptor -> unit IO.io
+  val attach : t -> 'c conn role -> 'c conn -> unit
+  val detach : t -> 'c conn role -> 'c conn
+  val get_connection : t -> otherrole:'c conn role -> 'c conn
 end
 
 open Linocaml.Base

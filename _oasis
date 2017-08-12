@@ -14,15 +14,6 @@ Library "scribble-ocaml-runtime"
   Modules:
     Base, Endpoint, Formatter, Session, Direct
   InternalModules:
-    Unsafe
+    GHashtbl, Unsafe
   BuildDepends: threads, str, linocaml
 
-Executable "test_multiparty"
-  Path: tests
-  BuildTools: ocamlbuild
-  MainIs: test_multiparty_base.ml
-  Install: false
-  ByteOpt: -linkall
-  NativeOpt: -linkall
-  BuildDepends: scribble-ocaml-runtime, oUnit
-  CompiledObject: best

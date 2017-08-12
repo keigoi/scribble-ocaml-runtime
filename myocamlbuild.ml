@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: 41b70135fe1165df80382b63a7a160ab) *)
+(* DO NOT EDIT (digest: f4018b2a94114da5d31a5d8dd1545710) *)
 module OASISGettext = struct
 (* # 22 "src/oasis/OASISGettext.ml" *)
 
@@ -881,47 +881,8 @@ let package_default =
   {
      MyOCamlbuildBase.lib_ocaml = [("scribble-ocaml-runtime", ["lib"], [])];
      lib_c = [];
-     flags =
-       [
-          (["oasis_executable_test_multiparty_byte"; "ocaml"; "link"; "byte"],
-            [(OASISExpr.EBool true, S [A "-linkall"])]);
-          ([
-              "oasis_executable_test_multiparty_native";
-              "ocaml";
-              "link";
-              "native"
-           ],
-            [(OASISExpr.EBool true, S [A "-linkall"])]);
-          ([
-              "oasis_executable_test_multiparty_byte";
-              "ocaml";
-              "ocamldep";
-              "byte"
-           ],
-            [(OASISExpr.EBool true, S [A "-linkall"])]);
-          ([
-              "oasis_executable_test_multiparty_native";
-              "ocaml";
-              "ocamldep";
-              "native"
-           ],
-            [(OASISExpr.EBool true, S [A "-linkall"])]);
-          ([
-              "oasis_executable_test_multiparty_byte";
-              "ocaml";
-              "compile";
-              "byte"
-           ],
-            [(OASISExpr.EBool true, S [A "-linkall"])]);
-          ([
-              "oasis_executable_test_multiparty_native";
-              "ocaml";
-              "compile";
-              "native"
-           ],
-            [(OASISExpr.EBool true, S [A "-linkall"])])
-       ];
-     includes = [("tests", ["lib"])]
+     flags = [];
+     includes = []
   }
   ;;
 
@@ -929,6 +890,6 @@ let conf = {MyOCamlbuildFindlib.no_automatic_syntax = false}
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default conf package_default;;
 
-# 933 "myocamlbuild.ml"
+# 894 "myocamlbuild.ml"
 (* OASIS_STOP *)
 Ocamlbuild_plugin.dispatch dispatch_default;;

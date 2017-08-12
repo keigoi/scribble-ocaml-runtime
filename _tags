@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 4901d621fc977ccdf81d2ca0a8c9ae4f)
+# DO NOT EDIT (digest: 2e76ae6a5f1dfdfb70830f9e231c0c5f)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -21,25 +21,11 @@ true: annot, bin_annot
 "lib/formatter.cmx": for-pack(Scribble-ocaml-runtime)
 "lib/session.cmx": for-pack(Scribble-ocaml-runtime)
 "lib/direct.cmx": for-pack(Scribble-ocaml-runtime)
+"lib/gHashtbl.cmx": for-pack(Scribble-ocaml-runtime)
 "lib/unsafe.cmx": for-pack(Scribble-ocaml-runtime)
 <lib/*.ml{,i,y}>: pkg_linocaml
 <lib/*.ml{,i,y}>: pkg_str
 <lib/*.ml{,i,y}>: pkg_threads
-# Executable test_multiparty
-<tests/test_multiparty_base.{native,byte}>: oasis_executable_test_multiparty_byte
-<tests/*.ml{,i,y}>: oasis_executable_test_multiparty_byte
-<tests/test_multiparty_base.{native,byte}>: oasis_executable_test_multiparty_native
-<tests/*.ml{,i,y}>: oasis_executable_test_multiparty_native
-<tests/test_multiparty_base.{native,byte}>: pkg_linocaml
-<tests/test_multiparty_base.{native,byte}>: pkg_oUnit
-<tests/test_multiparty_base.{native,byte}>: pkg_str
-<tests/test_multiparty_base.{native,byte}>: pkg_threads
-<tests/test_multiparty_base.{native,byte}>: use_scribble-ocaml-runtime
-<tests/*.ml{,i,y}>: pkg_linocaml
-<tests/*.ml{,i,y}>: pkg_oUnit
-<tests/*.ml{,i,y}>: pkg_str
-<tests/*.ml{,i,y}>: pkg_threads
-<tests/*.ml{,i,y}>: use_scribble-ocaml-runtime
 # OASIS_STOP
 
 "examples": not_hygienic

@@ -1,41 +1,69 @@
+module type ROLE = sig
+  type 'a kind
+  type 'a role
+  type pair = Pair : 'a role * 'a -> pair
 
-module Make(LinIO:Linocaml.Base.LIN_IO) : Base.ENDPOINT with module LinIO = LinIO
-  = struct
+  val string_of_role : 'a role -> string
+  val make_role : 'a kind -> string -> 'a role
+  val roleeq : _ role -> _ role -> bool
+  val unpack : 'a role -> pair -> 'a
+end
+                 
+    
+module Make(LinIO:Linocaml.Base.LIN_IO)(Role:ROLE)
+       : Base.ENDPOINT with module LinIO = LinIO and type 'c role = 'c Role.role
+= struct
   module LinIO = LinIO
   module IO = LinIO.IO
 
-  module type BINARY_CONN = Base.BINARY_CONN with type 'a Binary.io = 'a IO.io
-  type conn = (module BINARY_CONN)
+  module RoleKey = struct
+    type 'a key = 'a Role.role
+    let equal = Role.roleeq
+    type pair = Role.pair = Pair : 'a key * 'a -> pair
+    let unpack = Role.unpack
+  end
 
-  type 'g connector = unit -> conn IO.io
-  type 'g acceptor  = unit -> conn IO.io
+  type 'c conn = {conn    : 'c;
+                  send    : 'a. 'c -> 'a -> unit IO.io;
+                  receive : 'a. 'c -> 'a IO.io;
+                  close   : 'c -> unit IO.io}
 
-  type t = {self: Base.role; role2bin : (string, conn) Hashtbl.t}
+  type 'c connector = unit -> 'c conn IO.io
+  type 'c acceptor  = unit -> 'c conn IO.io
+
+  type 'c rolekind = 'c conn Role.kind
+  type 'c role = 'c Role.role
+  let string_of_role = Role.string_of_role
+  let make_role = Role.make_role
+
+  module RoleMap = GHashtbl.Make(RoleKey)
+
+  type t = {self: string; role2conn : RoleMap.t}
 
   let myname {self} = self
-         
-  let init : Base.role -> t IO.io = fun role ->
-    IO.return {self=role; role2bin=Hashtbl.create 42}
+                    
+  let init : string -> t IO.io = fun role ->
+    IO.return {self=role; role2conn=RoleMap.create 42}
     
-  let connect : t -> Base.role -> 'g connector -> unit IO.io = fun t role conn ->
+  let connect : t -> 'c conn role -> 'c connector -> unit IO.io = fun t role conn ->
     let open IO in
     conn () >>= fun raw ->
-    (Hashtbl.add t.role2bin role raw; return ())
-      
-  let accept : t -> Base.role -> 'g acceptor -> unit IO.io = fun t role acpt ->
+    (RoleMap.add t.role2conn role raw; return ())
+    
+  let accept : t -> 'c conn role -> 'g acceptor -> unit IO.io = fun t role acpt ->
     let open IO in
     acpt () >>= fun raw ->
-    (Hashtbl.add t.role2bin role raw; return ())
-      
-  let attach : t -> Base.role -> conn -> unit = fun t role conn ->
-    Hashtbl.add t.role2bin role conn
+    (RoleMap.add t.role2conn role raw; return ())
+    
+  let attach : t -> 'c conn role -> 'c conn -> unit = fun t role conn ->
+    RoleMap.add t.role2conn role conn
 
-  let detach : t -> Base.role -> conn = fun t role ->
-    let conn = Hashtbl.find t.role2bin role in
-    Hashtbl.remove t.role2bin role;
+  let detach : t -> 'c conn role -> 'c conn = fun t role ->
+    let conn = RoleMap.find t.role2conn role in
+    RoleMap.remove t.role2conn role;
     conn
 
-  let get_connection : t -> othername:Base.role -> conn = fun t ~othername ->
-    Hashtbl.find t.role2bin othername
-end
+  let get_connection : t -> otherrole:'c conn role -> 'c conn = fun t ~otherrole ->
+    RoleMap.find t.role2conn otherrole
+                                                          end
 

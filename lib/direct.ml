@@ -1,4 +1,3 @@
-include Session.Make(Endpoint.Make(Linocaml.Direct))
 
 module type CHAN = sig
   type +'a io
@@ -25,23 +24,53 @@ module Make_raw_chan(M:CHAN) = struct
   let close _ = ()
 end
 module RawChan = Make_raw_chan(Chan)
-               
-module SharedMemory : sig
-  val create_endpoint : unit -> ('g Endpoint.acceptor * 'g Endpoint.connector)
-end = struct
-  let create_endpoint () =
-    let make raw = 
-      let module M = struct
-          module Binary = RawChan
-          let conn = raw
-        end
-      in
-      (module M : Endpoint.BINARY_CONN)
-    in
-    let ch = Chan.create () in
-    (fun () -> make (Chan.receive ch)),
-    (fun () -> let raw = RawChan.create () in Chan.send ch raw; make raw)
+
+module type ROLE = sig
+  type 'a kind
+  type 'a role
+  type pair = Pair : 'a role * 'a -> pair
+
+  val string_of_role : 'a role -> string
+  val make_role : 'a kind -> string -> 'a role
+  val roleeq : _ role -> _ role -> bool
+  val unpack : 'a role -> pair -> 'a
 end
+               
+module Role = struct
+  type _ kind = Shmem : RawChan.t kind
+  type 'a role = 'a kind * string
+  type pair = Pair : 'a role * 'a -> pair
+
+  let string_of_role (_,s) = s
+  let make_role k s = k, s
+  let roleeq : type a b. a role -> b role -> bool =
+    fun r1 r2 ->
+    match r1, r2 with
+    | (Shmem,s1), (Shmem,s2) -> s1==s2
+  let unpack : type a. a role -> pair -> a =
+    fun r p -> match r, p with
+    | (Shmem,_), (Pair((Shmem,_),v)) -> v
+end
+               
+include Session.Make(Endpoint.Make(Linocaml.Direct)(Role))
+               
+               
+(* module SharedMemory : sig *)
+(*   val create_endpoint : unit -> ('g Endpoint.acceptor * 'g Endpoint.connector) *)
+(* end = struct *)
+(*   let create_endpoint () = *)
+(*     let make raw =  *)
+(*       let module M = struct *)
+(*           module Binary = RawChan *)
+(*           let conn = raw *)
+(*         end *)
+(*       in *)
+(*       (module M : Endpoint.BINARY_CONN) *)
+(*     in *)
+(*     let ch = Chan.create () in *)
+(*     (fun () -> make (Chan.receive ch)), *)
+(*     (fun () -> let raw = RawChan.create () in Chan.send ch raw; make raw) *)
+(* end *)
 
 (* module TCP : sig *)
 (*   val connect : string -> int -> 'g Endpoint.connector *)

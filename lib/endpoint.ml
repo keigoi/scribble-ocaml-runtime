@@ -11,7 +11,7 @@ end
                  
     
 module Make(LinIO:Linocaml.Base.LIN_IO)(Role:ROLE)
-       : Base.ENDPOINT with module LinIO = LinIO and type 'c role = 'c Role.role
+       : Base.ENDPOINT with module LinIO = LinIO and type 'c role = 'c Role.role and type 'c rolekind = 'c Role.kind
 = struct
   module LinIO = LinIO
   module IO = LinIO.IO
@@ -23,15 +23,10 @@ module Make(LinIO:Linocaml.Base.LIN_IO)(Role:ROLE)
     let unpack = Role.unpack
   end
 
-  type 'c conn = {conn    : 'c;
-                  send    : 'a. 'c -> 'a -> unit IO.io;
-                  receive : 'a. 'c -> 'a IO.io;
-                  close   : 'c -> unit IO.io}
+  type 'c connector = unit -> 'c IO.io
+  type 'c acceptor  = unit -> 'c IO.io
 
-  type 'c connector = unit -> 'c conn IO.io
-  type 'c acceptor  = unit -> 'c conn IO.io
-
-  type 'c rolekind = 'c conn Role.kind
+  type 'c rolekind = 'c Role.kind
   type 'c role = 'c Role.role
   let string_of_role = Role.string_of_role
   let make_role = Role.make_role
@@ -45,25 +40,26 @@ module Make(LinIO:Linocaml.Base.LIN_IO)(Role:ROLE)
   let init : string -> t IO.io = fun role ->
     IO.return {self=role; role2conn=RoleMap.create 42}
     
-  let connect : t -> 'c conn role -> 'c connector -> unit IO.io = fun t role conn ->
+  let connect : t -> 'c role -> 'c connector -> unit IO.io = fun t role conn ->
     let open IO in
     conn () >>= fun raw ->
     (RoleMap.add t.role2conn role raw; return ())
     
-  let accept : t -> 'c conn role -> 'g acceptor -> unit IO.io = fun t role acpt ->
+  let accept : t -> 'c role -> 'g acceptor -> unit IO.io = fun t role acpt ->
     let open IO in
     acpt () >>= fun raw ->
     (RoleMap.add t.role2conn role raw; return ())
     
-  let attach : t -> 'c conn role -> 'c conn -> unit = fun t role conn ->
-    RoleMap.add t.role2conn role conn
+  let attach : t -> 'c role -> 'c -> unit = fun t role ->
+    RoleMap.add t.role2conn role
 
-  let detach : t -> 'c conn role -> 'c conn = fun t role ->
+  let detach : t -> 'c role -> 'c = fun t role ->
     let conn = RoleMap.find t.role2conn role in
     RoleMap.remove t.role2conn role;
     conn
 
-  let get_connection : t -> otherrole:'c conn role -> 'c conn = fun t ~otherrole ->
+  let get_connection : t -> otherrole:'c role -> 'c = fun t ~otherrole ->
     RoleMap.find t.role2conn otherrole
-                                                          end
+
+end
 

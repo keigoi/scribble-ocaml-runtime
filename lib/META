@@ -1,12 +1,12 @@
 # OASIS_START
-# DO NOT EDIT (digest: 45548db7957859e900a966adf2e62b37)
+# DO NOT EDIT (digest: c4b3c615db09b40aefce335c66a7ba7e)
 version = "0.1"
 description = "A runtime for scribble-ocaml"
-requires = "threads str linocaml"
-archive(byte) = "scribble-ocaml-runtime.cma"
-archive(byte, plugin) = "scribble-ocaml-runtime.cma"
-archive(native) = "scribble-ocaml-runtime.cmxa"
-archive(native, plugin) = "scribble-ocaml-runtime.cmxs"
-exists_if = "scribble-ocaml-runtime.cma"
+requires = "ppx_implicits threads str linocaml"
+archive(byte) = "scribble.cma"
+archive(byte, plugin) = "scribble.cma"
+archive(native) = "scribble.cmxa"
+archive(native, plugin) = "scribble.cmxs"
+exists_if = "scribble.cma"
 # OASIS_STOP
 

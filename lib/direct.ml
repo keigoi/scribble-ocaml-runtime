@@ -25,17 +25,6 @@ module Make_raw_chan(M:CHAN) = struct
 end
 module RawChan = Make_raw_chan(Chan)
 
-module type ROLE = sig
-  type 'a kind
-  type 'a role
-  type pair = Pair : 'a role * 'a -> pair
-
-  val string_of_role : 'a role -> string
-  val make_role : 'a kind -> string -> 'a role
-  val roleeq : _ role -> _ role -> bool
-  val unpack : 'a role -> pair -> 'a
-end
-               
 module Role = struct
   type _ kind = Shmem : RawChan.t kind
   type 'a role = 'a kind * string

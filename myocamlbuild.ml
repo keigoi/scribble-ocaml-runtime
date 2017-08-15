@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: f4018b2a94114da5d31a5d8dd1545710) *)
+(* DO NOT EDIT (digest: 40b51887043aa394cc47b8aa95fa8d39) *)
 module OASISGettext = struct
 (* # 22 "src/oasis/OASISGettext.ml" *)
 
@@ -879,9 +879,23 @@ end
 open Ocamlbuild_plugin;;
 let package_default =
   {
-     MyOCamlbuildBase.lib_ocaml = [("scribble-ocaml-runtime", ["lib"], [])];
+     MyOCamlbuildBase.lib_ocaml = [("scribble", ["lib"], [])];
      lib_c = [];
-     flags = [];
+     flags =
+       [
+          (["oasis_library_scribble_byte"; "ocaml"; "link"; "byte"],
+            [(OASISExpr.EBool true, S [A "-I"; A "+threads"])]);
+          (["oasis_library_scribble_native"; "ocaml"; "link"; "native"],
+            [(OASISExpr.EBool true, S [A "-I"; A "+threads"])]);
+          (["oasis_library_scribble_byte"; "ocaml"; "ocamldep"; "byte"],
+            [(OASISExpr.EBool true, S [A "-I"; A "+threads"])]);
+          (["oasis_library_scribble_native"; "ocaml"; "ocamldep"; "native"],
+            [(OASISExpr.EBool true, S [A "-I"; A "+threads"])]);
+          (["oasis_library_scribble_byte"; "ocaml"; "compile"; "byte"],
+            [(OASISExpr.EBool true, S [A "-I"; A "+threads"])]);
+          (["oasis_library_scribble_native"; "ocaml"; "compile"; "native"],
+            [(OASISExpr.EBool true, S [A "-I"; A "+threads"])])
+       ];
      includes = []
   }
   ;;
@@ -890,6 +904,6 @@ let conf = {MyOCamlbuildFindlib.no_automatic_syntax = false}
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default conf package_default;;
 
-# 894 "myocamlbuild.ml"
+# 908 "myocamlbuild.ml"
 (* OASIS_STOP *)
 Ocamlbuild_plugin.dispatch dispatch_default;;

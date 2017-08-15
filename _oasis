@@ -8,12 +8,14 @@ License:     Apache
 Plugins:     META (0.4), DevFiles (0.4)
 BuildTools: ocamlbuild
 
-Library "scribble-ocaml-runtime"
-  Path:       lib
+Library "scribble"
+  Path: lib
   Pack: true
   Modules:
-    Base, Endpoint, Formatter, Session, Direct
+    Base, Endpoint, Session, Direct
   InternalModules:
     GHashtbl, Unsafe
-  BuildDepends: threads, str, linocaml
+  BuildDepends: ppx_implicits, threads, str, linocaml
+  ByteOpt: -I +threads
+  NativeOpt: -I +threads
 

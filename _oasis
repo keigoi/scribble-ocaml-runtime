@@ -12,7 +12,7 @@ Flag lwt
   Description: build the Lwt submodule
   Default: true
 
-Library "scribble"
+Library scribble
   Path: lib
   Pack: true
   Modules:
@@ -23,7 +23,7 @@ Library "scribble"
   ByteOpt: -I +threads
   NativeOpt: -I +threads
 
-Library linocaml_lwt
+Library scribble_lwt
   Build$:        flag(lwt)
   Install$:      flag(lwt)
   Path: lwt

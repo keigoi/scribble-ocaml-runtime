@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 6355986b5036a332ea3e8f341910aca4)
+# DO NOT EDIT (digest: f63c48ab3aacac9de2590a07e6c9afff)
 version = "0.1"
 description = "A runtime for scribble-ocaml"
 requires = "threads str linocaml ppx_implicits"
@@ -12,11 +12,11 @@ package "lwt" (
  version = "0.1"
  description = "A runtime for scribble-ocaml"
  requires = "scribble lwt lwt.unix"
- archive(byte) = "linocaml_lwt.cma"
- archive(byte, plugin) = "linocaml_lwt.cma"
- archive(native) = "linocaml_lwt.cmxa"
- archive(native, plugin) = "linocaml_lwt.cmxs"
- exists_if = "linocaml_lwt.cma"
+ archive(byte) = "scribble_lwt.cma"
+ archive(byte, plugin) = "scribble_lwt.cma"
+ archive(native) = "scribble_lwt.cmxa"
+ archive(native, plugin) = "scribble_lwt.cmxs"
+ exists_if = "scribble_lwt.cma"
 )
 # OASIS_STOP
 

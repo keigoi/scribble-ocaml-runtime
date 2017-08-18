@@ -1,65 +1,73 @@
-module type ROLE = sig
-  type 'a kind
-  type 'a role
-  type pair = Pair : 'a role * 'a -> pair
-
-  val string_of_role : 'a role -> string
-  val make_role : 'a kind -> string -> 'a role
-  val roleeq : _ role -> _ role -> bool
-  val unpack : 'a role -> pair -> 'a
-end
-                 
     
-module Make(LinIO:Linocaml.Base.LIN_IO)(Role:ROLE)
-       : Base.ENDPOINT with module LinIO = LinIO and type 'c role = 'c Role.role and type 'c rolekind = 'c Role.kind
+module Make(IO:Linocaml.Base.IO)(RawChan:Base.RAW_DCHAN)(ConnKind:Base.CONN_KIND with type shmem_chan = RawChan.t)
+: Base.ENDPOINT with module ConnKind = ConnKind and type 'a io = 'a IO.io
 = struct
-  module LinIO = LinIO
-  module IO = LinIO.IO
+  module ConnKind = ConnKind
+  type +'a io = 'a IO.io
 
-  module RoleKey = struct
-    type 'a key = 'a Role.role
-    let equal = Role.roleeq
-    type pair = Role.pair = Pair : 'a key * 'a -> pair
-    let unpack = Role.unpack
+  type 'c conn = {handle: 'c; close: unit -> unit IO.io}
+  type 'c connector = unit -> 'c conn IO.io
+  type 'c acceptor  = unit -> 'c conn IO.io
+
+  module MapKey = struct
+    type 'a key = Key : 'a ConnKind.t * string -> 'a conn key
+    type pair = Pair : 'a key * 'a -> pair
+
+    let equal : type a b. a key -> b key -> bool = fun k1 k2 ->
+      match k1, k2 with (Key(k1,str1)), (Key(k2,str2)) -> ConnKind.eq k1 k2 && str1=str2
+
+    let unpack : type a. a key -> pair -> a = fun k pair ->
+      match k, pair with
+      | Key(k1, _), Pair(Key(k2,_),{handle;close}) ->
+         let h = ConnKind.unpack k1 (ConnKind.Pair(k2,handle)) in
+         {handle=h;close}
   end
+  module Map = GHashtbl.Make(MapKey)
 
-  type 'c connector = unit -> 'c IO.io
-  type 'c acceptor  = unit -> 'c IO.io
+  type 'a key = 'a ConnKind.t * string
 
-  type 'c rolekind = 'c Role.kind
-  type 'c role = 'c Role.role
-  let string_of_role = Role.string_of_role
-  let make_role = Role.make_role
+  let create_key kind str = kind, str
+  let string_of_key (_,str) = str
+  let kind_of_key (k,_) = k
+                             
+  type t = {myname: string; role2conn : Map.t}
 
-  module RoleMap = GHashtbl.Make(RoleKey)
+  let myname {myname} = myname
+                      
+  let create : myname:string -> t = fun ~myname ->
+    {myname; role2conn=Map.create 42}
 
-  type t = {self: string; role2conn : RoleMap.t}
-
-  let myname {self} = self
-                    
-  let init : string -> t IO.io = fun role ->
-    IO.return {self=role; role2conn=RoleMap.create 42}
+  let close : t -> unit IO.io = fun {role2conn} ->
+    let r = ref [] in
+    Map.iter (object method f : type a. a MapKey.key -> a -> unit = fun k v -> match k,v with (MapKey.Key(_,_)),{close} -> r := close :: !r end) role2conn;
+    let open IO in
+    let rec close = function
+      | [] -> return ()
+      | c::cs -> c () >>= fun _ -> close cs
+    in
+    close !r
     
-  let connect : t -> 'c role -> 'c connector -> unit IO.io = fun t role conn ->
+    
+  let connect : t -> 'c key -> 'c connector -> unit IO.io = fun t (k,s) conn ->
     let open IO in
     conn () >>= fun raw ->
-    (RoleMap.add t.role2conn role raw; return ())
+    (Map.add t.role2conn (MapKey.Key(k,s)) raw; return ())
     
-  let accept : t -> 'c role -> 'g acceptor -> unit IO.io = fun t role acpt ->
+  let accept : t -> 'c key -> 'c acceptor -> unit IO.io = fun t (k,s) acpt ->
     let open IO in
     acpt () >>= fun raw ->
-    (RoleMap.add t.role2conn role raw; return ())
+    (Map.add t.role2conn (MapKey.Key(k,s)) raw; return ())
     
-  let attach : t -> 'c role -> 'c -> unit = fun t role ->
-    RoleMap.add t.role2conn role
+  let attach : t -> 'c key -> 'c conn -> unit = fun t (k,s) conn ->
+    Map.add t.role2conn (MapKey.Key(k,s)) conn
 
-  let detach : t -> 'c role -> 'c = fun t role ->
-    let conn = RoleMap.find t.role2conn role in
-    RoleMap.remove t.role2conn role;
+  let detach : t -> 'c key -> 'c conn = fun t (k,s) ->
+    let conn = Map.find t.role2conn (MapKey.Key(k,s)) in
+    Map.remove t.role2conn (MapKey.Key(k,s));
     conn
 
-  let get_connection : t -> otherrole:'c role -> 'c = fun t ~otherrole ->
-    RoleMap.find t.role2conn otherrole
+  let get_connection : t -> 'c key -> 'c conn = fun t (k,s) ->
+    Map.find t.role2conn (MapKey.Key(k,s))
 
 end
 

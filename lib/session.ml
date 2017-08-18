@@ -1,32 +1,47 @@
 open Linocaml.Base
 open Linocaml.Lens
 
-module Make(E:Base.ENDPOINT)
-(* : Base.SESSION with module Endpoint = E *)
+let m = Mutex.create ()
+let print_endline s =
+  Mutex.lock m;
+  Printf.printf "thread %d: %s" (Thread.id (Thread.self ())) s;
+  print_newline ();
+  Mutex.unlock m
+
+module Make(LinIO:Linocaml.Base.LIN_IO)
+           (Chan:Base.CHAN with type 'a io = 'a LinIO.IO.io)
+           (RawChan:Base.RAW_DCHAN with type 'a io = 'a LinIO.IO.io)
+           (E:Base.ENDPOINT with type 'a io = 'a LinIO.IO.io and type ConnKind.shmem_chan=RawChan.t)
+: Base.SESSION with type 'a io = 'a LinIO.IO.io and type ('p,'q,'a) monad = ('p,'q,'a) LinIO.monad and type shmem_chan = RawChan.t and module Endpoint = E
 = struct
+  module LinIO = LinIO
+  module IO = LinIO.IO
   module Endpoint = E
-  module LinIO = Endpoint.LinIO
-  module IO = Endpoint.LinIO.IO
+  module RawChan = RawChan
+  type shmem_chan = RawChan.t
+
+  type 'a io = 'a LinIO.IO.io
+  type ('p,'q,'a) monad = ('p,'q,'a) LinIO.monad
 
   module Sender = struct
-    type ('c,'v) t = private 'c -> 'v -> unit IO.io
-    let pack : ('c -> 'v -> unit IO.io) -> ('c, 'v) t = Obj.magic
-    let unpack : ('c,'v) t -> 'c -> 'v -> unit IO.io = Obj.magic
-    let pack_opt ~(_d:('c -> 'v -> unit IO.io)) = Some (pack _d)
-    [%%imp_spec opened Senders]
+    type ('c,'v) t = ('c -> 'v -> unit IO.io, [%imp Senders]) Ppx_implicits.t
+    let unpack : ('c,'v) t -> 'c -> 'v -> unit IO.io = fun d -> Ppx_implicits.imp ~d
   end
   module Receiver = struct
-    type ('c,'v) t = private 'c -> 'v IO.io
-    let pack : ('c -> 'v IO.io) -> ('c,'v) t = Obj.magic
-    let unpack : ('c,'v) t -> 'c -> 'v IO.io = Obj.magic
-    let pack_opt ~(_d:('c -> 'v IO.io)) = Some (pack _d)
-    [%%imp_spec opened Receivers]
-  end    
+    type ('c,'v) t = ('c -> 'v IO.io, [%imp Receivers]) Ppx_implicits.t
+    let unpack : ('c,'v) t -> 'c -> 'v IO.io = fun d -> Ppx_implicits.imp ~d
+  end
+  module Senders = struct
+    let _f = RawChan.send
+  end
+  module Receivers = struct
+    let _f = RawChan.receive
+  end
 
   type 'a lin = 'a Linocaml.Base.lin
   type 'a data = 'a Linocaml.Base.data
 
-  type ('r,'c) role = 'c E.role
+  type ('r,'c) role = 'c E.key
   type 'p sess_ = EP of Endpoint.t | Dummy
   type 'p sess = 'p sess_ lin
   type 'a connect = 'a
@@ -47,16 +62,16 @@ module Make(E:Base.ENDPOINT)
   let send : type c v br p pre post r p.
                   ?_sender:(c,br) Sender.t ->
                   ([ `send of br ] sess, p sess, pre, post) slot ->
-                  (r,c) role -> (br, (r,c) role * v data * p sess) lab -> v -> (pre, post, unit) Endpoint.LinIO.monad
+                  (r,c) role -> (br, (r,c) role * v data * p sess) lab -> v -> (pre, post, unit) LinIO.monad
     = fun ?_sender {get;put} dir {_pack} v ->
     LinIO.Internal.__monad begin
         fun pre ->
         let s = unsess (get pre) in
-        print_endline (E.myname s ^ ": send to " ^ E.string_of_role dir);
-        let c = E.get_connection s ~otherrole:dir in
+        print_endline (E.myname s ^ ": send to " ^ E.string_of_key dir);
+        let c = E.get_connection s dir in
         let sender = Sender.unpack @@ untrans _sender in
         let open IO in
-        sender c (_pack (dir,Data_Internal__ v,Lin_Internal__ Dummy)) >>= fun () ->
+        sender c.E.handle (_pack (dir,Data_Internal__ v,Lin_Internal__ Dummy)) >>= fun () ->
         return (put pre (Lin_Internal__ (EP s)), ())
       end
 
@@ -75,12 +90,12 @@ module Make(E:Base.ENDPOINT)
         let s = unsess (get1 pre) in
         let mid = put1 pre (Lin_Internal__ (EP s)) in
         let t = get2 mid in
-        print_endline (E.myname s ^ ": send to " ^ E.string_of_role dir);
-        let c = E.get_connection s ~otherrole:dir in
+        print_endline (E.myname s ^ ": send to " ^ E.string_of_key dir);
+        let c = E.get_connection s dir in
         let sender = Sender.unpack @@ untrans _sender in
         let open IO in
         (* we put Dummy for 'p sess part since the connection hash should not be shared with the others *)
-        sender c (_pack (dir,t,Lin_Internal__ Dummy)) >>= fun _ ->
+        sender c.E.handle (_pack (dir,t,Lin_Internal__ Dummy)) >>= fun _ ->
         return (put2 mid Linocaml.Base.Empty, ())
       end
     
@@ -90,16 +105,16 @@ module Make(E:Base.ENDPOINT)
               ?_receiver:(c,br) Receiver.t
               -> ([`recv of (dir,c) role * br] sess, empty, pre, post) slot
               -> (dir,c) role
-              -> (pre, post, br lin) Endpoint.LinIO.monad =
+              -> (pre, post, br lin) LinIO.monad =
     fun ?_receiver {get;put} dir ->
     LinIO.Internal.__monad begin
         fun pre ->
         let s = unsess (get pre) in
-        print_endline (E.myname s ^ ": receive from " ^ E.string_of_role dir);
-        let c = E.get_connection s ~otherrole:dir in
+        print_endline (E.myname s ^ ": receive from " ^ E.string_of_key dir);
+        let c = E.get_connection s dir in
         let receiver = Receiver.unpack @@ untrans _receiver in
         let open IO in
-        receiver c >>= fun (br : br) ->
+        receiver c.E.handle >>= fun (br : br) ->
         (* we must replace 'p sess part, since the part in payload is Dummy (see send) *)
         let br = Unsafe.obj_conv_msg br (Lin_Internal__ (EP s)) in
         print_endline (E.myname s ^ ": received");
@@ -132,11 +147,11 @@ module Make(E:Base.ENDPOINT)
         fun pre ->
         let s = unsess (get pre) in
         let sender = Sender.unpack @@ untrans _sender in
-        print_endline (E.myname s ^ ": connect to " ^ E.string_of_role dir);
+        print_endline (E.myname s ^ ": connect to " ^ E.string_of_key dir);
         let open IO in
         connector () >>= fun conn ->
         E.attach s dir conn;
-        sender conn (_pack (dir,Data_Internal__ v,Lin_Internal__ Dummy)) >>= fun () ->
+        sender conn.E.handle (_pack (dir,Data_Internal__ v,Lin_Internal__ Dummy)) >>= fun () ->
         return (put pre (Lin_Internal__ (EP s)), ())
       end
 
@@ -152,12 +167,12 @@ module Make(E:Base.ENDPOINT)
     LinIO.Internal.__monad begin
         fun pre ->
         let s = unsess (get pre) in
-        print_endline (E.myname s ^ ": accept from " ^ E.string_of_role dir);
+        print_endline (E.myname s ^ ": accept from " ^ E.string_of_key dir);
         let open IO in
         acceptor () >>= fun conn ->
         E.attach s dir conn;
         let receiver = Receiver.unpack @@ untrans _receiver in
-        receiver conn >>= fun (br : br)(*polyvar*) ->
+        receiver conn.E.handle >>= fun (br : br)(*polyvar*) ->
         (* we must replace 'p sess part, since the part in payload is Dummy (see send) *)
         let br = Unsafe.obj_conv_msg br (Lin_Internal__ (EP s)) in
         print_endline (E.myname s ^ ": received");
@@ -175,34 +190,125 @@ module Make(E:Base.ENDPOINT)
     LinIO.Internal.__monad begin
         fun pre ->
         let s = unsess (get pre) in
-        print_endline (E.myname s ^ ": disconnect from " ^ E.string_of_role dir);
-        (* TODO close all connections *)
-        IO.return (put pre (Lin_Internal__ (EP s)), ())
+        print_endline (E.myname s ^ ": disconnect from " ^ E.string_of_key dir);
+        let open IO in
+        E.close s >>= fun _ ->
+        return (put pre (Lin_Internal__ (EP s)), ())
+      end
+
+  let create : myname:string -> ('c, 'c, 'p sess) LinIO.monad
+    = fun ~myname ->
+    LinIO.Internal.__monad begin
+        fun pre ->
+        let s = E.create ~myname in
+        IO.return (pre, (Lin_Internal__ (EP s)))
       end
     
+  let attach :
+        ('p sess, 'p sess, 'ss, 'ss) slot -> ('r,'c) role -> 'c Endpoint.conn -> ('ss, 'ss, unit) LinIO.monad
+    = fun {get;put} dir conn ->
+    LinIO.Internal.__monad begin
+        fun pre ->
+        let s = unsess (get pre) in
+        E.attach s dir conn;
+        IO.return (pre, ())
+      end
+        
+  let detach :
+        ('p sess, 'p sess, 'ss, 'ss) slot -> ('r, 'c) role -> ('ss, 'ss, 'c Endpoint.conn data) LinIO.monad
+    = fun {get;put} dir ->
+    LinIO.Internal.__monad begin
+        fun pre ->
+        let s = unsess (get pre) in
+        let conn = E.detach s dir in
+        IO.return (pre, Data_Internal__ conn)
+      end
+
+  module Shmem = struct
+    type s = (string, RawChan.t) Hashtbl.t
+    type 'g channel = {roles: string list; channels:(string, s Chan.t) Hashtbl.t}
+    
+    let create_channel : roles:string list -> 'g channel =
+      fun ~roles ->
+      let tbl = Hashtbl.create 42 in
+      List.iter (fun role -> Hashtbl.add tbl role (Chan.create ())) roles;
+      {roles; channels=tbl}
+  end
+
   module Internal = struct
     (* val __new_connect_later_channel : string list -> ('g,[`Explicit]) channel *)
     
-    let __mkrole : 'c E.rolekind -> string -> ('a,'c) role = E.make_role
-                                              
-    let __connect :
-          myname:string ->
-          roles:string list ->
-          'g Endpoint.connector ->
-          ('c, 'c, 'p sess) Endpoint.LinIO.monad = fun ~myname ~roles conn ->
-      failwith "TODO"
-      
-    let __accept :
-          myname:string ->
-          roles:string list ->
-          'g Endpoint.acceptor ->
-          ('c, 'c, 'p sess) Endpoint.LinIO.monad = fun ~myname ~roles conn ->
-      failwith "TODO"
+    let __mkrole : 'c Endpoint.ConnKind.t -> string -> ('r,'c) role = E.create_key
 
-               (* val __initiate : *)
-               (*   myname:string -> *)
-               (*   ('g,[`Explicit]) channel -> *)
-               (*   ('c, 'c, 'p sess) monad *)
+    let to_assoc tbl =
+      let r = ref [] in
+      Hashtbl.iter (fun k v -> r := (k,v)::!r) tbl;
+      !r
+
+    let rec create_endpoint myname assoc =
+      let ep = Endpoint.create ~myname in
+      List.iter (fun (rolename,raw) ->
+          let key = Endpoint.create_key Endpoint.ConnKind.shmem_chan_kind rolename in
+          Endpoint.attach ep key {Endpoint.handle=raw; close=(fun _ -> IO.return ())})
+                assoc;
+      ep
+
+    let __accept : 'g Shmem.channel -> ('r, Endpoint.ConnKind.shmem_chan) role -> ('ss, 'ss, 'p sess) LinIO.monad =
+      fun {Shmem.roles; channels} role ->
+
+      (* hashtbl to record sessions between (r1,r2) *)
+      let all = Hashtbl.create 42 in
+      
+      (* a function to create the session channel between r1 and r2 *)
+      let create_or_get_conn r1 r2 =
+        try
+          Hashtbl.find all (r1,r2)
+        with
+        | Not_found ->
+           try
+             RawChan.reverse (Hashtbl.find all (r2,r1))
+           with
+           | Not_found -> begin
+               let s = RawChan.create () in
+               Hashtbl.add all (r1,r2) s;
+               s
+             end
+      in
+      let create_session r =
+            let others = List.filter (fun r2 -> r2<>r) roles in
+            let sess = Hashtbl.create 42 in
+            List.iter (fun other ->
+                let conn = create_or_get_conn r other in
+                Hashtbl.add sess other conn) others;
+            sess
+      in
+      let open IO in
+      let rec send_all = function
+        | [] -> return ()
+        | r::rs ->
+           let sess = create_session r in
+           Chan.send (Hashtbl.find channels r) sess >>= fun _ ->
+           send_all rs
+      in
+      let myname = Endpoint.string_of_key role in
+      LinIO.lift begin
+        print_endline ("myname:" ^ myname);
+        let others = List.filter (fun r -> r<>myname) roles in
+        send_all others >>= fun _ ->
+        let ep = create_endpoint myname (to_assoc (create_session myname)) in
+        return (Lin_Internal__ (EP ep))
+      end
+      
+    let __connect : 'g Shmem.channel -> ('r, Endpoint.ConnKind.shmem_chan) role -> ('ss, 'ss, 'p sess) LinIO.monad =
+      fun {Shmem.roles; channels} myrole ->
+      let myname = Endpoint.string_of_key myrole in
+      let open IO in
+      LinIO.lift begin
+          print_endline ("myname:" ^ myname);
+          Chan.receive (Hashtbl.find channels myname) >>= fun sess ->
+          let ep = create_endpoint myname (to_assoc sess) in
+          return (Lin_Internal__ (EP ep))
+        end
   end
        
 end

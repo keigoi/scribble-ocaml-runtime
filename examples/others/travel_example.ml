@@ -1,12 +1,13 @@
-open Multiparty
+open Linocaml.Direct
+open Scribble.Direct
     
 (* declare a single slot 's' *)
 type 'a ctx = <s : 'a>
 [@@deriving lens]
 [@@runner]
-            
-let ch = new_channel ()
 
+let ch = Travel.new_channel_travel ()
+       
 open Travel
 
 let booking_agent () =
@@ -27,7 +28,7 @@ let booking_agent () =
   in
   loop None ()
   >>
-  let%lin `Bye(_,#s) = receive s role_C in 
+  let%lin `Bye(_,#s) = receive s role_C in
   close s
 
 let booking_client () =

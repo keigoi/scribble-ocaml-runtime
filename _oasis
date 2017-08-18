@@ -8,14 +8,28 @@ License:     Apache
 Plugins:     META (0.4), DevFiles (0.4)
 BuildTools: ocamlbuild
 
+Flag lwt
+  Description: build the Lwt submodule
+  Default: true
+
 Library "scribble"
   Path: lib
   Pack: true
   Modules:
     Base, Endpoint, Session, Direct
   InternalModules:
-    GHashtbl, Unsafe
-  BuildDepends: ppx_implicits, threads, str, linocaml
+    Channel, Dchannel, GHashtbl, Unsafe
+  BuildDepends: threads, str, linocaml, ppx_implicits
   ByteOpt: -I +threads
   NativeOpt: -I +threads
 
+Library linocaml_lwt
+  Build$:        flag(lwt)
+  Install$:      flag(lwt)
+  Path: lwt
+  Findlibname: lwt
+  Findlibparent: scribble
+  Modules:
+    Scribble_lwt
+  BuildDepends:
+    scribble, lwt, lwt.unix

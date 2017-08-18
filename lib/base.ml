@@ -1,49 +1,89 @@
+module type CHAN = sig
+  type +'a io
+  type 'a t
+  val create : unit -> 'a t
+  val send : 'a t -> 'a -> unit io
+  val receive : 'a t -> 'a io
+end
+
+module type DCHAN = sig
+  include CHAN
+  val reverse : 'a t -> 'a t
+end
+
+module type RAW_DCHAN = sig
+  type +'a io
+  type t
+  val create : unit -> t
+  val send : t -> 'a -> unit io
+  val receive : t -> 'a io
+  val reverse : t -> t
+end
+
+module type CONN_KIND = sig
+  type 'c t
+  type pair = Pair : 'c t * 'c -> pair
+  val eq : _ t -> _ t -> bool
+  val unpack : 'c t -> pair -> 'c
+
+  type shmem_chan
+  val shmem_chan_kind : shmem_chan t
+end
 
 module type ENDPOINT = sig
-  module LinIO : Linocaml.Base.LIN_IO
-  module IO = LinIO.IO
+  module ConnKind : CONN_KIND
 
-  type 'c connector = unit -> 'c IO.io
-  type 'c acceptor  = unit -> 'c IO.io
+  type +'a io
+  type 'c key
 
-  type 'c rolekind
-  type 'c role
-  val string_of_role : 'c role -> string
-  val make_role : 'c rolekind -> string -> 'c role
+  val create_key : 'c ConnKind.t -> string -> 'c key
+  val string_of_key : 'c key -> string
+  val kind_of_key : 'c key -> 'c ConnKind.t
+     
+  type 'c conn = {handle: 'c; close: unit -> unit io}
+  type 'c connector = unit -> 'c conn io
+  type 'c acceptor  = unit -> 'c conn io
 
   type t
-  val init : string -> t IO.io
+
+  val create : myname:string -> t
+  val close : t -> unit io
   val myname : t -> string
-  val connect : t -> 'c role -> 'c connector -> unit IO.io
-  val accept : t -> 'c role -> 'c acceptor -> unit IO.io
-  val attach : t -> 'c role -> 'c -> unit
-  val detach : t -> 'c role -> 'c
-  val get_connection : t -> otherrole:'c role -> 'c
+
+  val connect : t -> 'c key -> 'c connector -> unit io
+  val accept : t -> 'c key -> 'c acceptor -> unit io
+  val attach : t -> 'c key -> 'c conn -> unit
+  val detach : t -> 'c key -> 'c conn
+  val get_connection : t -> 'c key -> 'c conn
 end
 
 open Linocaml.Base
 
-
 module type SESSION = sig
-  module Endpoint : ENDPOINT
-  module LinIO = Endpoint.LinIO
-  module IO = LinIO.IO
+  type +'a io
+  type ('p,'q,'a) monad
+  type shmem_chan
+
+  module Endpoint : ENDPOINT with type 'a io = 'a io
 
   module Sender : sig
-    type ('c,'v) t
-    val pack_opt : _d:('c -> 'v -> unit IO.io) -> ('c,'v) t option
-    [%%imp_spec opened Senders]
+    type ('c,'v) t = ('c -> 'v -> unit io, [%imp Senders]) Ppx_implicits.t
   end
   module Receiver : sig
-    type ('c,'v) t
-    val pack_opt : _d:('c -> 'v IO.io) -> ('c,'v) t option
-    [%%imp_spec opened Receivers]
+    type ('c,'v) t = ('c -> 'v io, [%imp Receivers]) Ppx_implicits.t
+  end
+  module Senders : sig
+    val _f : shmem_chan -> 'v -> unit io
+  end
+  module Receivers : sig
+    val _f : shmem_chan -> 'v io
   end
             
   type 'a lin = 'a Linocaml.Base.lin
   type 'a data = 'a Linocaml.Base.data
 
-  type ('r,'c) role = 'c Endpoint.role
+  type ('r,'c) role
+   
   type 'p sess_
   type 'p sess = 'p sess_ lin
   type 'a connect
@@ -56,7 +96,7 @@ module type SESSION = sig
   val send :
     ?_sender:('c,'br) Sender.t ->
     ([ `send of 'br ] sess, 'p sess, 'pre, 'post) slot ->
-    ('dir,'c) role -> ('br, ('dir,'c) role * 'v data * 'p sess) lab -> 'v -> ('pre, 'post, unit) LinIO.monad
+    ('dir,'c) role -> ('br, ('dir,'c) role * 'v data * 'p sess) lab -> 'v -> ('pre, 'post, unit) monad
 
   (** invariant: 'br must be [`tag of 'a * 'b * 'c sess] *)
   val deleg_send :
@@ -64,24 +104,24 @@ module type SESSION = sig
     ([ `send of 'br ] sess, 'p sess, 'pre, 'mid) slot ->
     ('dir,'c) role -> ('br, ('dir,'c) role * 'q sess * 'p sess) lab ->
     ('q sess, empty, 'mid, 'post) slot ->
-    ('pre, 'post, unit) LinIO.monad
+    ('pre, 'post, unit) monad
 
   (** invariant: 'br must be [`tag of 'a * 'b sess] *)
   val receive :
     ?_receiver:('c, 'br) Receiver.t ->
     ([`recv of ('dir,'c) role * 'br] sess, empty, 'pre, 'post) slot
     -> ('dir,'c) role
-    -> ('pre, 'post, 'br lin) LinIO.monad
+    -> ('pre, 'post, 'br lin) monad
 
   val close :
     ([ `close ] sess, empty, 'pre, 'post) slot ->
-    ('pre, 'post, unit) LinIO.monad
+    ('pre, 'post, unit) monad
 
   val connect :
     ?_sender:('c,'br) Sender.t ->
     ([ `send of 'br ] sess, 'p sess, 'pre, 'post) slot ->
     'c Endpoint.connector ->
-    ('dir,'c) role -> ('br, ('dir,'c) role connect * 'v data * 'p sess) lab -> 'v -> ('pre, 'post, unit) LinIO.monad
+    ('dir,'c) role -> ('br, ('dir,'c) role connect * 'v data * 'p sess) lab -> 'v -> ('pre, 'post, unit) monad
 
   (** invariant: 'br must be [`tag of 'a * 'b sess] *)
   val accept :
@@ -89,32 +129,28 @@ module type SESSION = sig
     ([`accept of ('dir,'c) role * 'br] sess, empty, 'pre, 'post) slot
     -> 'c Endpoint.acceptor
     -> ('dir,'c) role
-    -> ('pre, 'post, 'br lin) LinIO.monad
+    -> ('pre, 'post, 'br lin) monad
 
   val disconnect :
     ([ `disconnect of 'br ] sess, 'p sess, 'pre, 'post) slot ->
-    ('dir,'c) role -> ('br, ('dir,'c) role * unit data * 'p sess) lab -> unit -> ('pre, 'post, unit) LinIO.monad
+    ('dir,'c) role -> ('br, ('dir,'c) role * unit data * 'p sess) lab -> unit -> ('pre, 'post, unit) monad
+
+  val create : myname:string -> ('c, 'c, 'p sess) monad
+
+  val attach :
+    ('p sess, 'p sess, 'ss, 'ss) slot -> ('r,'c) role -> 'c Endpoint.conn -> ('ss, 'ss, unit) monad
+
+  val detach :
+    ('p sess, 'p sess, 'ss, 'ss) slot -> ('r,'c) role -> ('ss, 'ss, 'c Endpoint.conn data) monad
+
+  module Shmem : sig
+    type 'g channel
+    val create_channel : roles:string list -> 'g channel
+  end
 
   module Internal : sig
-    (* val __new_connect_later_channel : string list -> ('g,[`Explicit]) channel *)
-      
-    val __mkrole : 'c Endpoint.rolekind -> string -> ('a,'c) role
-      
-    val __connect :
-      myname:string ->
-      roles:string list ->
-      'g Endpoint.connector ->
-      ('c, 'c, 'p sess) Endpoint.LinIO.monad
-      
-    val __accept :
-      myname:string ->
-      roles:string list ->
-      'g Endpoint.acceptor ->
-      ('c, 'c, 'p sess) Endpoint.LinIO.monad
-      
-    (* val __initiate : *)
-    (*   myname:string -> *)
-    (*   ('g,[`Explicit]) channel -> *)
-    (*   ('c, 'c, 'p sess) monad *)
+    val __mkrole : 'c Endpoint.ConnKind.t -> string -> ('r,'c) role
+    val __accept : 'g Shmem.channel -> ('r, Endpoint.ConnKind.shmem_chan) role -> ('ss, 'ss, 'p sess) monad
+    val __connect : 'g Shmem.channel -> ('r, Endpoint.ConnKind.shmem_chan) role -> ('ss, 'ss, 'p sess) monad
   end
 end

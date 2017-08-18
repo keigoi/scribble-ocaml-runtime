@@ -1,13 +1,16 @@
 module Chan = Channel.Make
-                (Linocaml.Direct.IO)
+                (Linocaml_lwt.IO)
                 (struct
-                  type +'a io = 'a
-                  include Mutex
+                  type +'a io = 'a Lwt.t
+                  include Lwt_mutex
                 end)
                 (struct
-                  type +'a io = 'a
-                  type m = Mutex.t
-                  include Condition
+                  type +'a io = 'a Lwt.t
+                  type m = Lwt_mutex.t
+                  type t = unit Lwt_condition.t
+                  let create = Lwt_condition.create
+                  let signal c = Lwt_condition.signal c ()
+                  let wait c m = Lwt_condition.wait ~mutex:m c
                 end)
 module RawChan = Unsafe.Make_raw_dchan(Dchannel.Make(Chan))
 
@@ -29,7 +32,7 @@ module ConnKind = struct
 end
                
 include Session.Make
-          (Linocaml.Direct)
+          (Linocaml_lwt)
           (Chan)
           (RawChan)
-          (Endpoint.Make(Linocaml.Direct.IO)(RawChan)(ConnKind))
+          (Endpoint.Make(Linocaml_lwt.IO)(RawChan)(ConnKind))

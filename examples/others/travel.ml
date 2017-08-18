@@ -1,75 +1,77 @@
 (* Generated from scribble-ocaml https://github.com/keigoi/scribble-ocaml
  * This code should be compiled with session-ocaml (multiparty)
  * https://github.com/keigoi/session-ocaml/tree/multiparty *)
-open Multiparty
+open Linocaml.Direct
+open Scribble.Direct
 type travel
 
-type travel_C = travel_C_1
-and travel_C_1 = 
+type 'c travel_C = 'c travel_C_1
+and 'c travel_C_1 = 
   [`send of
-    [`Query of [`A] role * string data *
-      [`recv of [`A] role * [`Quote of int data *
-        travel_C_1 sess]] sess
-    |`Yes of [`A] role * unit data *
+    [`Query of ([`A],'c) role * string data *
+      [`recv of ([`A], 'c) role * [`Quote of int data *
+        'c travel_C_1 sess]] sess
+    |`Yes of ([`A], 'c) role * unit data *
       [`send of
-        [`Payment of [`S] role * string data *
-          [`recv of [`S] role * [`Ack of unit data *
-            travel_C_2 sess]] sess]] sess
-    |`No of [`A] role * unit data *
-      travel_C_2 sess]]
-and travel_C_2 = 
+        [`Payment of ([`S], 'c) role * string data *
+          [`recv of ([`S], 'c) role * [`Ack of unit data *
+            'c travel_C_2 sess]] sess]] sess
+    |`No of ([`A], 'c) role * unit data *
+      'c travel_C_2 sess]]
+and 'c travel_C_2 = 
   [`send of
-    [`Bye of [`A] role * unit data *
+    [`Bye of ([`A], 'c) role * unit data *
       [`close] sess]]
-type travel_A = travel_A_1
-and travel_A_1 = 
-  [`recv of [`C] role *
+type 'c travel_A = 'c travel_A_1
+and 'c travel_A_1 = 
+  [`recv of ([`C], 'c) role *
     [`Query of string data *
       [`send of
-        [`Quote of [`C] role * int data *
+        [`Quote of ([`C], 'c) role * int data *
           [`send of
-            [`Dummy of [`S] role * unit data *
-              travel_A_1 sess]] sess]] sess
+            [`Dummy of ([`S], 'c) role * unit data *
+              'c travel_A_1 sess]] sess]] sess
     |`Yes of unit data *
       [`send of
-        [`Yes of [`S] role * unit data *
-          travel_A_2 sess]] sess
+        [`Yes of ([`S], 'c) role * unit data *
+          'c travel_A_2 sess]] sess
     |`No of unit data *
       [`send of
-        [`No of [`S] role * unit data *
-          travel_A_2 sess]] sess]]
-and travel_A_2 = 
-  [`recv of [`C] role * [`Bye of unit data *
+        [`No of ([`S], 'c) role * unit data *
+          'c travel_A_2 sess]] sess]]
+and 'c travel_A_2 = 
+  [`recv of ([`C], 'c) role * [`Bye of unit data *
     [`close] sess]]
-type travel_S = travel_S_1
-and travel_S_1 = 
-  [`recv of [`A] role *
+type 'c travel_S = 'c travel_S_1
+and 'c travel_S_1 = 
+  [`recv of ([`A], 'c) role *
     [`Dummy of unit data *
-      travel_S_1 sess
+      'c travel_S_1 sess
     |`Yes of unit data *
-      [`recv of [`C] role * [`Payment of string data *
+      [`recv of ([`C], 'c) role * [`Payment of string data *
         [`send of
-          [`Ack of [`C] role * unit data *
+          [`Ack of ([`C], 'c) role * unit data *
             [`close] sess]] sess]] sess
     |`No of unit data *
       [`close] sess]]
 
-let role_C : [`C] role = Internal.__mkrole "role_C"
-let role_A : [`A] role = Internal.__mkrole "role_A"
-let role_S : [`S] role = Internal.__mkrole "role_S"
+let role_C : ([`C], RawChan.t) role = Internal.__mkrole Endpoint.ConnKind.shmem_chan_kind "role_C"
+let role_A : ([`A], RawChan.t) role = Internal.__mkrole Endpoint.ConnKind.shmem_chan_kind "role_A"
+let role_S : ([`S], RawChan.t) role = Internal.__mkrole Endpoint.ConnKind.shmem_chan_kind "role_S"
+(* let role_S : ([`S], RawChan.t) role = Internal.__mkrole ConnKind.Shmem "role_S" *)
 
-let accept_C : 'pre 'post. (travel,[`Implicit]) channel -> ('c, 'c, travel_C sess) monad =
+let accept_C : 'pre 'post. travel Shmem.channel -> ('c, 'c, RawChan.t travel_C sess) monad =
   fun ch ->
-  Internal.__accept ~myname:"role_C" ~cli_count:2 ch
+  Internal.__accept ch role_C
 
-let connect_A : 'pre 'post. (travel,[`Implicit]) channel -> ('c, 'c, travel_A sess) monad =
+let connect_A : 'pre 'post. travel Shmem.channel -> ('c, 'c, RawChan.t travel_A sess) monad =
   fun ch ->
-  Internal.__connect ~myname:"role_A" ch
-let connect_S : 'pre 'post. (travel,[`Implicit]) channel -> ('c, 'c, travel_S sess) monad =
+  Internal.__connect ch role_A
+let connect_S : 'pre 'post. travel Shmem.channel -> ('c, 'c, RawChan.t travel_S sess) monad =
   fun ch ->
-  Internal.__connect ~myname:"role_S" ch
+  Internal.__connect ch role_S
 
-let new_channel_travel : unit -> (travel,[`Implicit]) channel = new_channel
+let new_channel_travel : unit -> travel Shmem.channel = fun () -> Shmem.create_channel ["role_C";"role_A";"role_S"]
 let msg_Ack = {_pack=(fun a -> `Ack(a))}
 let msg_Bye = {_pack=(fun a -> `Bye(a))}
 let msg_Dummy = {_pack=(fun a -> `Dummy(a))}

@@ -10,6 +10,7 @@ module type GS =
     val remove : t -> 'a key -> unit
     val find : t -> 'a key -> 'a
     val iter : < f: 'a. 'a key -> 'a -> unit > -> t -> unit
+    val mem : t-> 'a key -> bool
   end
 
 module type GHashedType =
@@ -45,4 +46,6 @@ struct
 
   let iter (f : <f: 'a. 'a key -> 'a -> unit>) tbl =
     H.iter (fun _ (Pair (k, v)) -> f#f k v) tbl
+
+  let mem tbl k = H.mem tbl (Key k)
 end

@@ -1,4 +1,5 @@
-PKG threads unix compiler-libs.common ppx_tools ppx_tools.metaquot ppx_deriving oUnit linocaml linocaml.ppx linocaml.ppx_lens
+PKG threads unix lwt.unix oUnit linocaml linocaml.ppx linocaml.ppx_lens ppx_implicits
+B +threads
 
 S lib
 S ppx

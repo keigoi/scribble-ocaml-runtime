@@ -9,7 +9,6 @@ test.*
 \.\#*
 
 _build
-**/*.mlpack
 **/*.odocl
 **/*.docdir
 setup.data

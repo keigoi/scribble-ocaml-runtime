@@ -16,14 +16,13 @@ let obj_conv_msg : 'poly1 -> 'a -> 'poly2 = fun poly sess ->
       end
 
 
-module UChan : sig (* untyped *)
-  type t
-  val create : unit -> t
-  val receive : t -> 'a
-  val send : t -> 'a -> unit
-end = struct
-  type t = unit Event.channel
-  let create = Event.new_channel
-  let receive c = Obj.magic (Event.sync (Event.receive c))
-  let send c v = Event.sync (Event.send c (Obj.magic v ))
+module Make_raw_dchan(M:Base.DCHAN)
+       : Base.RAW_DCHAN with type 'a io = 'a M.io
+  = struct
+  type +'a io = 'a M.io
+  type t = unit M.t
+  let create = M.create
+  let send c v = M.send c (Obj.magic v)
+  let receive c = Obj.magic (M.receive c)
+  let reverse c = M.reverse c
 end

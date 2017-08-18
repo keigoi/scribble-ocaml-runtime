@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: 40b51887043aa394cc47b8aa95fa8d39) *)
+(* DO NOT EDIT (digest: e3104d6a07e00bc2aac05c8be09aaf6d) *)
 module OASISGettext = struct
 (* # 22 "src/oasis/OASISGettext.ml" *)
 
@@ -879,7 +879,8 @@ end
 open Ocamlbuild_plugin;;
 let package_default =
   {
-     MyOCamlbuildBase.lib_ocaml = [("scribble", ["lib"], [])];
+     MyOCamlbuildBase.lib_ocaml =
+       [("scribble", ["lib"], []); ("linocaml_lwt", ["lwt"], [])];
      lib_c = [];
      flags =
        [
@@ -896,7 +897,7 @@ let package_default =
           (["oasis_library_scribble_native"; "ocaml"; "compile"; "native"],
             [(OASISExpr.EBool true, S [A "-I"; A "+threads"])])
        ];
-     includes = []
+     includes = [("lwt", ["lib"])]
   }
   ;;
 
@@ -904,6 +905,6 @@ let conf = {MyOCamlbuildFindlib.no_automatic_syntax = false}
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default conf package_default;;
 
-# 908 "myocamlbuild.ml"
+# 909 "myocamlbuild.ml"
 (* OASIS_STOP *)
 Ocamlbuild_plugin.dispatch dispatch_default;;

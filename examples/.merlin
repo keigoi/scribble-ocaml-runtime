@@ -1,5 +1,5 @@
-PKG threads scribble-ocaml-runtime linocaml.ppx linocaml.ppx_lens ppx_implicits
-B +threads
+PKG threads scribble linocaml.ppx linocaml.ppx_lens ppx_implicits
+
 FLG -short-paths
 
 S .

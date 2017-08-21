@@ -1,5 +1,5 @@
     
-module Make(IO:Linocaml.Base.IO)(RawChan:Base.RAW_DCHAN)(ConnKind:Base.CONN_KIND with type shmem_chan = RawChan.t)
+module Make(IO:Linocaml.Base.IO)(ConnKind:Base.CONN_KIND)
 : Base.ENDPOINT with module ConnKind = ConnKind and type 'a io = 'a IO.io
 = struct
   module ConnKind = ConnKind

@@ -32,4 +32,4 @@ include Session.Make
           (Linocaml.Direct)
           (Chan)
           (RawChan)
-          (Endpoint.Make(Linocaml.Direct.IO)(RawChan)(ConnKind))
+          (ConnKind)

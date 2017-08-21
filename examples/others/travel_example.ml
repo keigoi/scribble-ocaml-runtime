@@ -1,5 +1,5 @@
-open Linocaml.Direct
-open Scribble.Direct
+open Linocaml_lwt
+open Scribble_lwt
     
 (* declare a single slot 's' *)
 type 'a ctx = <s : 'a>
@@ -37,7 +37,7 @@ let booking_client () =
   send s role_A msg_Query "from London to Paris, 10th July 2017" >>
 
   let%lin `Quote(price,#s) = receive s role_A in
-  (Printf.printf "client: price received: %d" price; return ()) >>
+  (Printf.printf "client: price received: %d\n" price; return ()) >>
 
   begin
     if price < 100 then
@@ -71,8 +71,14 @@ let booking_server () =
   loop () >>
   close s
 
+open Lwt
 let fork name f () =
-  Thread.create (fun () -> print_endline (name ^ ": started."); f (); print_endline (name ^ ": finished.")) ()
+  (* Thread.create (fun () -> print_endline (name ^ ": started."); f (); print_endline (name ^ ": finished.")) () *)
+  print_endline (name ^ ": started."); f () >>=  fun _ -> (print_endline (name ^ ": finished."); Lwt.return_unit)
+
+let join ts =
+  (* List.iter Thread.join ts *)
+  Lwt.join ts
   
 let _ =
   let t1 = fork "client" (run_ctx booking_client) () in
@@ -80,6 +86,5 @@ let _ =
   print_endline "server started.";
   run_ctx booking_server ();
   print_endline "server finished.";
-  Thread.join t1;
-  Thread.join t2;
+  join [t1;t2];
   ()

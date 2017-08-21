@@ -1,8 +1,8 @@
 (* Generated from scribble-ocaml https://github.com/keigoi/scribble-ocaml
  * This code should be compiled with session-ocaml (multiparty)
  * https://github.com/keigoi/session-ocaml/tree/multiparty *)
-open Linocaml.Direct
-open Scribble.Direct
+open Linocaml_lwt
+open Scribble_lwt
 type travel
 
 type 'c travel_C = 'c travel_C_1
@@ -55,19 +55,19 @@ and 'c travel_S_1 =
     |`No of unit data *
       [`close] sess]]
 
-let role_C : ([`C], RawChan.t) role = Internal.__mkrole Endpoint.ConnKind.shmem_chan_kind "role_C"
-let role_A : ([`A], RawChan.t) role = Internal.__mkrole Endpoint.ConnKind.shmem_chan_kind "role_A"
-let role_S : ([`S], RawChan.t) role = Internal.__mkrole Endpoint.ConnKind.shmem_chan_kind "role_S"
-(* let role_S : ([`S], RawChan.t) role = Internal.__mkrole ConnKind.Shmem "role_S" *)
+let role_C : ([`C], Endpoint.ConnKind.shmem_chan) role = Internal.__mkrole Endpoint.ConnKind.shmem_chan_kind "role_C"
+let role_A : ([`A], Endpoint.ConnKind.shmem_chan) role = Internal.__mkrole Endpoint.ConnKind.shmem_chan_kind "role_A"
+let role_S : ([`S], Endpoint.ConnKind.shmem_chan) role = Internal.__mkrole Endpoint.ConnKind.shmem_chan_kind "role_S"
+(* let role_S : ([`S], Endpoint.ConnKind.shmem_chan) role = Internal.__mkrole ConnKind.Shmem "role_S" *)
 
-let accept_C : 'pre 'post. travel Shmem.channel -> ('c, 'c, RawChan.t travel_C sess) monad =
+let accept_C : 'pre 'post. travel Shmem.channel -> ('c, 'c, Endpoint.ConnKind.shmem_chan travel_C sess) monad =
   fun ch ->
   Internal.__accept ch role_C
 
-let connect_A : 'pre 'post. travel Shmem.channel -> ('c, 'c, RawChan.t travel_A sess) monad =
+let connect_A : 'pre 'post. travel Shmem.channel -> ('c, 'c, Endpoint.ConnKind.shmem_chan travel_A sess) monad =
   fun ch ->
   Internal.__connect ch role_A
-let connect_S : 'pre 'post. travel Shmem.channel -> ('c, 'c, RawChan.t travel_S sess) monad =
+let connect_S : 'pre 'post. travel Shmem.channel -> ('c, 'c, Endpoint.ConnKind.shmem_chan travel_S sess) monad =
   fun ch ->
   Internal.__connect ch role_S
 

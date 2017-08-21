@@ -1,24 +1,16 @@
 open Linocaml.Base
 open Linocaml.Lens
 
-let m = Mutex.create ()
-let print_endline s =
-  Mutex.lock m;
-  Printf.printf "thread %d: %s" (Thread.id (Thread.self ())) s;
-  print_newline ();
-  Mutex.unlock m
-
 module Make(LinIO:Linocaml.Base.LIN_IO)
            (Chan:Base.CHAN with type 'a io = 'a LinIO.IO.io)
            (RawChan:Base.RAW_DCHAN with type 'a io = 'a LinIO.IO.io)
-           (E:Base.ENDPOINT with type 'a io = 'a LinIO.IO.io and type ConnKind.shmem_chan=RawChan.t)
-: Base.SESSION with type 'a io = 'a LinIO.IO.io and type ('p,'q,'a) monad = ('p,'q,'a) LinIO.monad and type shmem_chan = RawChan.t and module Endpoint = E
+           (ConnKind:Base.CONN_KIND with type shmem_chan = RawChan.t)
+: Base.SESSION with type 'a io = 'a LinIO.IO.io and type ('p,'q,'a) monad = ('p,'q,'a) LinIO.monad
 = struct
+  module Endpoint = Endpoint.Make(LinIO.IO)(ConnKind)
   module LinIO = LinIO
   module IO = LinIO.IO
-  module Endpoint = E
-  module RawChan = RawChan
-  type shmem_chan = RawChan.t
+  module E = Endpoint
 
   type 'a io = 'a LinIO.IO.io
   type ('p,'q,'a) monad = ('p,'q,'a) LinIO.monad
@@ -41,7 +33,7 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
   type 'a lin = 'a Linocaml.Base.lin
   type 'a data = 'a Linocaml.Base.data
 
-  type ('r,'c) role = 'c E.key
+  type ('r,'c) role = 'c Endpoint.key
   type 'p sess_ = EP of Endpoint.t | Dummy
   type 'p sess = 'p sess_ lin
   type 'a connect = 'a

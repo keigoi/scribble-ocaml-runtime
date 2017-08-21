@@ -62,7 +62,6 @@ open Linocaml.Base
 module type SESSION = sig
   type +'a io
   type ('p,'q,'a) monad
-  type shmem_chan
 
   module Endpoint : ENDPOINT with type 'a io = 'a io
 
@@ -73,10 +72,10 @@ module type SESSION = sig
     type ('c,'v) t = ('c -> 'v io, [%imp Receivers]) Ppx_implicits.t
   end
   module Senders : sig
-    val _f : shmem_chan -> 'v -> unit io
+    val _f : Endpoint.ConnKind.shmem_chan -> 'v -> unit io
   end
   module Receivers : sig
-    val _f : shmem_chan -> 'v io
+    val _f : Endpoint.ConnKind.shmem_chan -> 'v io
   end
             
   type 'a lin = 'a Linocaml.Base.lin

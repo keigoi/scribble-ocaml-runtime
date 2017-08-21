@@ -1,4 +1,4 @@
-module Chan = Channel.Make
+module Chan = Scribble.Channel.Make
                 (Linocaml_lwt.IO)
                 (struct
                   type +'a io = 'a Lwt.t
@@ -12,7 +12,7 @@ module Chan = Channel.Make
                   let signal c = Lwt_condition.signal c ()
                   let wait c m = Lwt_condition.wait ~mutex:m c
                 end)
-module RawChan = Unsafe.Make_raw_dchan(Dchannel.Make(Chan))
+module RawChan = Scribble.Unsafe.Make_raw_dchan(Scribble.Dchannel.Make(Chan))
 
 module ConnKind = struct
   type _ t = Shmem : RawChan.t t
@@ -31,8 +31,8 @@ module ConnKind = struct
   let shmem_chan_kind = Shmem
 end
                
-include Session.Make
+include Scribble.Session.Make
           (Linocaml_lwt)
           (Chan)
           (RawChan)
-          (Endpoint.Make(Linocaml_lwt.IO)(RawChan)(ConnKind))
+          (ConnKind)

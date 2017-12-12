@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 8baff2e506677a3af128325ff04838d6)
+# DO NOT EDIT (digest: 98b81a154d7a38d8e6df2e19e805749d)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -35,6 +35,7 @@ true: annot, bin_annot
 # Library scribble_lwt
 "lwt/scribble_lwt.cmxs": use_scribble_lwt
 <lwt/*.ml{,i,y}>: pkg_linocaml
+<lwt/*.ml{,i,y}>: pkg_linocaml.lwt
 <lwt/*.ml{,i,y}>: pkg_lwt
 <lwt/*.ml{,i,y}>: pkg_lwt.unix
 <lwt/*.ml{,i,y}>: pkg_ppx_implicits

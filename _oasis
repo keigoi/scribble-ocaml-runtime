@@ -2,7 +2,7 @@ OASISFormat: 0.4
 Name:        scribble-ocaml-runtime
 Version:     0.1
 Homepage:    https://github.com/keigoi/scribble-ocaml-runtime
-Synopsis:    A runtime for scribble-ocaml 
+Synopsis:    A runtime for scribble-ocaml
 Authors:     Keigo Imai
 License:     Apache
 Plugins:     META (0.4), DevFiles (0.4)
@@ -15,13 +15,13 @@ Flag lwt
 Library scribble
   Path: lib
   Pack: true
+  ByteOpt: -I +threads -short-paths
+  NativeOpt: -I +threads -short-paths
+  BuildDepends: threads, str, linocaml, ppx_implicits
   Modules:
     Base, Endpoint, Session, Direct
   InternalModules:
     Channel, Dchannel, GHashtbl, Unsafe
-  BuildDepends: threads, str, linocaml, ppx_implicits
-  ByteOpt: -I +threads
-  NativeOpt: -I +threads
 
 Library scribble_lwt
   Build$:        flag(lwt)
@@ -32,4 +32,4 @@ Library scribble_lwt
   Modules:
     Scribble_lwt
   BuildDepends:
-    scribble, lwt, lwt.unix
+    scribble, lwt, lwt.unix, linocaml.lwt

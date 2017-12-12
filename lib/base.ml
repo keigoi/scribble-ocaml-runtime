@@ -39,7 +39,7 @@ module type ENDPOINT = sig
   val create_key : 'c ConnKind.t -> string -> 'c key
   val string_of_key : 'c key -> string
   val kind_of_key : 'c key -> 'c ConnKind.t
-     
+
   type 'c conn = {handle: 'c; close: unit -> unit io}
   type 'c connector = unit -> 'c conn io
   type 'c acceptor  = unit -> 'c conn io
@@ -77,12 +77,12 @@ module type SESSION = sig
   module Receivers : sig
     val _f : Endpoint.ConnKind.shmem_chan -> 'v io
   end
-            
+
   type 'a lin = 'a Linocaml.Base.lin
   type 'a data = 'a Linocaml.Base.data
 
   type ('r,'c) role
-   
+
   type 'p sess_
   type 'p sess = 'p sess_ lin
   type 'a connect
@@ -90,12 +90,12 @@ module type SESSION = sig
   type ('br, 'payload) lab = {
       _pack : 'payload -> 'br
     }
-                           
+
   (** invariant: 'br must be [`tag of 'a * 'b * 'c sess] *)
   val send :
     ?_sender:('c,'br) Sender.t ->
-    ([ `send of 'br ] sess, 'p sess, 'pre, 'post) slot ->
-    ('dir,'c) role -> ('br, ('dir,'c) role * 'v data * 'p sess) lab -> 'v -> ('pre, 'post, unit) monad
+    ([ `send of 'br ] sess, empty, 'pre, 'post) slot ->
+    ('dir,'c) role -> ('br, ('dir,'c) role * 'v data * 'p sess) lab -> 'v -> ('pre, 'post, 'p sess) monad
 
   (** invariant: 'br must be [`tag of 'a * 'b * 'c sess] *)
   val deleg_send :

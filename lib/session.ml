@@ -53,8 +53,8 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
   (** invariant: 'br must be [`tag of 'a * 'b * 'c sess] *)
   let send : type c v br p pre post r p.
                   ?_sender:(c,br) Sender.t ->
-                  ([ `send of br ] sess, p sess, pre, post) slot ->
-                  (r,c) role -> (br, (r,c) role * v data * p sess) lab -> v -> (pre, post, unit) LinIO.monad
+                  ([ `send of br ] sess, empty, pre, post) slot ->
+                  (r,c) role -> (br, (r,c) role * v data * p sess) lab -> v -> (pre, post, p sess) LinIO.monad
     = fun ?_sender {get;put} dir {_pack} v ->
     LinIO.Internal.__monad begin
         fun pre ->
@@ -64,7 +64,7 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
         let sender = Sender.unpack @@ untrans _sender in
         let open IO in
         sender c.E.handle (_pack (dir,Data_Internal__ v,Lin_Internal__ Dummy)) >>= fun () ->
-        return (put pre (Lin_Internal__ (EP s)), ())
+        return (put pre Empty, Lin_Internal__ (EP s))
       end
 
   (** invariant: 'br must be [`tag of 'a * 'b * 'c sess] *)
@@ -90,7 +90,7 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
         sender c.E.handle (_pack (dir,t,Lin_Internal__ Dummy)) >>= fun _ ->
         return (put2 mid Linocaml.Base.Empty, ())
       end
-    
+
   (** invariant: 'br must be [`tag of 'a * 'b sess] *)
   let receive
       :  type br dir c p pre xx post v.
@@ -112,7 +112,7 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
         print_endline (E.myname s ^ ": received");
         return (put pre Empty, Lin_Internal__ br)
       end
-    
+
   let close
       : type pre post.
              ([`close] sess, empty, pre, post) slot -> (pre, post, unit) LinIO.monad
@@ -195,7 +195,7 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
         let s = E.create ~myname in
         IO.return (pre, (Lin_Internal__ (EP s)))
       end
-    
+
   let attach :
         ('p sess, 'p sess, 'ss, 'ss) slot -> ('r,'c) role -> 'c Endpoint.conn -> ('ss, 'ss, unit) LinIO.monad
     = fun {get;put} dir conn ->
@@ -205,7 +205,7 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
         E.attach s dir conn;
         IO.return (pre, ())
       end
-        
+
   let detach :
         ('p sess, 'p sess, 'ss, 'ss) slot -> ('r, 'c) role -> ('ss, 'ss, 'c Endpoint.conn data) LinIO.monad
     = fun {get;put} dir ->
@@ -219,7 +219,7 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
   module Shmem = struct
     type s = (string, RawChan.t) Hashtbl.t
     type 'g channel = {roles: string list; channels:(string, s Chan.t) Hashtbl.t}
-    
+
     let create_channel : roles:string list -> 'g channel =
       fun ~roles ->
       let tbl = Hashtbl.create 42 in
@@ -229,7 +229,7 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
 
   module Internal = struct
     (* val __new_connect_later_channel : string list -> ('g,[`Explicit]) channel *)
-    
+
     let __mkrole : 'c Endpoint.ConnKind.t -> string -> ('r,'c) role = E.create_key
 
     let to_assoc tbl =
@@ -250,7 +250,7 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
 
       (* hashtbl to record sessions between (r1,r2) *)
       let all = Hashtbl.create 42 in
-      
+
       (* a function to create the session channel between r1 and r2 *)
       let create_or_get_conn r1 r2 =
         try
@@ -288,9 +288,9 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
         let others = List.filter (fun r -> r<>myname) roles in
         send_all others >>= fun _ ->
         let ep = create_endpoint myname (to_assoc (create_session myname)) in
-        return (Lin_Internal__ (EP ep))
+        return (EP ep)
       end
-      
+
     let __connect : 'g Shmem.channel -> ('r, Endpoint.ConnKind.shmem_chan) role -> ('ss, 'ss, 'p sess) LinIO.monad =
       fun {Shmem.roles; channels} myrole ->
       let myname = Endpoint.string_of_key myrole in
@@ -299,8 +299,7 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
           print_endline ("myname:" ^ myname);
           Chan.receive (Hashtbl.find channels myname) >>= fun sess ->
           let ep = create_endpoint myname (to_assoc sess) in
-          return (Lin_Internal__ (EP ep))
+          return (EP ep)
         end
   end
-       
 end

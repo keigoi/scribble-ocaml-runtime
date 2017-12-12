@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: 3d6aaed822c72155d64a9eb3a944762b) *)
+(* DO NOT EDIT (digest: fd185697257404098c39bd1dc3f6af4d) *)
 module OASISGettext = struct
 (* # 22 "src/oasis/OASISGettext.ml" *)
 
@@ -885,17 +885,35 @@ let package_default =
      flags =
        [
           (["oasis_library_scribble_byte"; "ocaml"; "link"; "byte"],
-            [(OASISExpr.EBool true, S [A "-I"; A "+threads"])]);
+            [
+               (OASISExpr.EBool true,
+                 S [A "-I"; A "+threads"; A "-short-paths"])
+            ]);
           (["oasis_library_scribble_native"; "ocaml"; "link"; "native"],
-            [(OASISExpr.EBool true, S [A "-I"; A "+threads"])]);
+            [
+               (OASISExpr.EBool true,
+                 S [A "-I"; A "+threads"; A "-short-paths"])
+            ]);
           (["oasis_library_scribble_byte"; "ocaml"; "ocamldep"; "byte"],
-            [(OASISExpr.EBool true, S [A "-I"; A "+threads"])]);
+            [
+               (OASISExpr.EBool true,
+                 S [A "-I"; A "+threads"; A "-short-paths"])
+            ]);
           (["oasis_library_scribble_native"; "ocaml"; "ocamldep"; "native"],
-            [(OASISExpr.EBool true, S [A "-I"; A "+threads"])]);
+            [
+               (OASISExpr.EBool true,
+                 S [A "-I"; A "+threads"; A "-short-paths"])
+            ]);
           (["oasis_library_scribble_byte"; "ocaml"; "compile"; "byte"],
-            [(OASISExpr.EBool true, S [A "-I"; A "+threads"])]);
+            [
+               (OASISExpr.EBool true,
+                 S [A "-I"; A "+threads"; A "-short-paths"])
+            ]);
           (["oasis_library_scribble_native"; "ocaml"; "compile"; "native"],
-            [(OASISExpr.EBool true, S [A "-I"; A "+threads"])])
+            [
+               (OASISExpr.EBool true,
+                 S [A "-I"; A "+threads"; A "-short-paths"])
+            ])
        ];
      includes = [("lwt", ["lib"])]
   }
@@ -905,6 +923,6 @@ let conf = {MyOCamlbuildFindlib.no_automatic_syntax = false}
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default conf package_default;;
 
-# 909 "myocamlbuild.ml"
+# 927 "myocamlbuild.ml"
 (* OASIS_STOP *)
 Ocamlbuild_plugin.dispatch dispatch_default;;

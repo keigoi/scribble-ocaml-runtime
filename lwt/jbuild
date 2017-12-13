@@ -1,0 +1,6 @@
+(jbuild_version 1)
+
+(library
+ ((name scribble_lwt)
+  (public_name scribble.lwt)
+  (libraries (scribble linocaml.lwt))))

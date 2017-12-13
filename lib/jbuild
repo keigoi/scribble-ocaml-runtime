@@ -1,0 +1,7 @@
+(jbuild_version 1)
+
+(library
+ ((name scribble)
+  (public_name scribble)
+  (flags ("-ppx" "`ocamlfind query ppx_implicits`/ppx_implicits"))
+  (libraries (threads linocaml ppx_implicits))))

@@ -8,27 +8,45 @@ For Scribble, consult the [Scribble official website](http://www.scribble.org/).
 Prepare OCaml 4.02.1 or later and install ```findlib```, ```ocamlbuild```, ```ppx_tools```, and ```[linocaml](https://github.com/keigoi/linocaml)```.
 We recommend to use ```opam``` and OCaml 4.03.0.
 
-Install the compiler and prerequisite libraries.
+Install the compiler and prerequisite libraries and tools.
 
-    opam switch 4.03.0
+    # Install git and mercurial
+    brew install git mercurial # or equivalent. For Debian-based systems, do "apt install git mercurial"
+
+    # Install opam
+    wget https://raw.github.com/ocaml/opam/master/shell/opam_installer.sh -O - | sh -s /usr/local/bin
+
+    opam switch 4.05.0
     eval `opam config env`
-    opam install ocamlfind ocamlbuild ppx_tools
+
+    # install prerequisites of ppx_implicits
+    opam pin add omake 0.10.2
+    opam install ocaml-compiler-libs ppx_deriving.4.2.1 re.1.7.1 ppxx.2.3.0 typpx.1.4.1
+
+    # install ppx_implicits
+    hg clone https://bitbucket.org/camlspotter/ppx_implicits
+    cd ppx_implicits
+    hg update 152cc81d7e87
+    ocaml setup.ml -configure --prefix `opam config var prefix`
+    ocaml setup.ml -build
+    ocaml setup.ml -install
+
+    opam pin remove omake
+    opam upgrade
+
+    opam install ocamlfind opam-installer jbuilder lwt.3.1.0 ppx_deriving.4.2.1
 
 And install [linocaml](https://github.com/keigoi/linocaml).
 
     git clone https://github.com/keigoi/linocaml.git
     cd linocaml
-    ./configure --prefix=$(dirname `which ocaml`)/..
-    make
-    make install
+    jbuilder build && jbuilder install
 
 Then clone the repository and type following at the top directory:
 
     git clone https://github.com/keigoi/scribble-ocaml-runtime.git
     cd scribble-ocaml-runtime
-    ./configure --prefix=$(dirname `which ocaml`)/..
-    make
-    make install
+    jbuilder build && jbuilder install
 
 Then you can play with ```scribble-ocaml-runtime```:
 

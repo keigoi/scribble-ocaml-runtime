@@ -1,22 +1,29 @@
-*.cm[ioxat]
-*.cmxa
-*.cmti
-*.o
 *.annot
-test.*
-*.top
-\#*
-\.\#*
+*.cmo
+*.cma
+*.cmi
+*.a
+*.o
+*.cmx
+*.cmxs
+*.cmxa
+*.cmt
 
-_build
-**/*.odocl
-**/*.docdir
-setup.data
-setup.log
-**/*~
-setup.exe
-setup-dev.exe
+# ocamlbuild working directory
+_build/
+
+# ocamlbuild targets
 *.byte
 *.native
-_tests
-*.out
+
+# oasis generated files
+setup.data
+setup.log
+
+# jbuilder generated files
+*.install
+*.exe
+
+# emacs
+\#*
+\.\#*

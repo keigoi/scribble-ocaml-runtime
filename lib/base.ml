@@ -93,54 +93,66 @@ module type SESSION = sig
 
   (** invariant: 'br must be [`tag of 'a * 'b * 'c sess] *)
   val send :
-    ?_sender:('c,'br) Sender.t ->
-    ([ `send of 'br ] sess, empty, 'pre, 'post) slot ->
-    ('dir,'c) role -> ('br, ('dir,'c) role * 'v data * 'p sess) lab -> 'v -> ('pre, 'post, 'p sess) monad
+    ?_sender:('c,'br) Sender.t
+    -> ([ `send of 'br ] sess, empty, 'pre, 'post) slot
+    -> ('dir,'c) role -> ('br, ('dir,'c) role * 'v data * 'p sess) lab
+    -> 'v
+    -> ('pre, 'post, 'p sess) monad
 
   (** invariant: 'br must be [`tag of 'a * 'b * 'c sess] *)
   val deleg_send :
-    ?_sender:('c,'br) Sender.t ->
-    ([ `send of 'br ] sess, 'p sess, 'pre, 'mid) slot ->
-    ('dir,'c) role -> ('br, ('dir,'c) role * 'q sess * 'p sess) lab ->
-    ('q sess, empty, 'mid, 'post) slot ->
-    ('pre, 'post, unit lin) monad
+    ?_sender:('c,'br) Sender.t
+    -> ([ `send of 'br ] sess, 'p sess, 'pre, 'mid) slot
+    -> ('dir,'c) role -> ('br, ('dir,'c) role * 'q sess * 'p sess) lab
+    -> ('q sess, empty, 'mid, 'post) slot
+    -> ('pre, 'post, unit lin) monad
 
   (** invariant: 'br must be [`tag of 'a * 'b sess] *)
   val receive :
-    ?_receiver:('c, 'br) Receiver.t ->
-    ([`recv of ('dir,'c) role * 'br] sess, empty, 'pre, 'post) slot
+    ?_receiver:('c, 'br) Receiver.t
+    -> ([`recv of ('dir,'c) role * 'br] sess, empty, 'pre, 'post) slot
     -> ('dir,'c) role
     -> ('pre, 'post, 'br lin) monad
 
   val close :
-    ([ `close ] sess, empty, 'pre, 'post) slot ->
-    ('pre, 'post, unit lin) monad
+    ([ `close ] sess, empty, 'pre, 'post) slot
+    -> ('pre, 'post, unit lin) monad
 
   val connect :
-    ?_sender:('c,'br) Sender.t ->
-    ([ `send of 'br ] sess, empty, 'pre, 'post) slot ->
-    'c Endpoint.connector ->
-    ('dir,'c) role -> ('br, ('dir,'c) role connect * 'v data * 'p sess) lab -> 'v -> ('pre, 'post, 'p sess) monad
+    ?_sender:('c,'br) Sender.t
+    -> ([ `send of 'br ] sess, empty, 'pre, 'post) slot
+    -> 'c Endpoint.connector
+    -> ('dir,'c) role
+    -> ('br, ('dir,'c) role connect * 'v data * 'p sess) lab
+    -> 'v
+    -> ('pre, 'post, 'p sess) monad
 
   (** invariant: 'br must be [`tag of 'a * 'b sess] *)
   val accept :
-    ?_receiver:('c, 'br) Receiver.t ->
-    ([`accept of ('dir,'c) role * 'br] sess, empty, 'pre, 'post) slot
+    ?_receiver:('c, 'br) Receiver.t
+    -> ([`accept of ('dir,'c) role * 'br] sess, empty, 'pre, 'post) slot
     -> 'c Endpoint.acceptor
     -> ('dir,'c) role
     -> ('pre, 'post, 'br lin) monad
 
   val disconnect :
-    ([ `disconnect of 'br ] sess, 'p sess, 'pre, 'post) slot ->
-    ('dir,'c) role -> ('br, ('dir,'c) role * unit data * 'p sess) lab -> unit -> ('pre, 'post, unit lin) monad
+    ([ `disconnect of 'br ] sess, 'p sess, 'pre, 'post) slot
+    -> ('dir,'c) role
+    -> ('br, ('dir,'c) role * unit data * 'p sess) lab
+    -> ('pre, 'post, unit lin) monad
 
   val initiate : myname:string -> ('c, 'c, 'p sess) monad
 
   val attach :
-    ('p sess, 'p sess, 'ss, 'ss) slot -> ('r,'c) role -> 'c Endpoint.conn -> ('ss, 'ss, unit lin) monad
+    ('p sess, 'p sess, 'ss, 'ss) slot
+    -> ('r,'c) role
+    -> 'c Endpoint.conn
+    -> ('ss, 'ss, unit lin) monad
 
   val detach :
-    ('p sess, 'p sess, 'ss, 'ss) slot -> ('r,'c) role -> ('ss, 'ss, 'c Endpoint.conn data lin) monad
+    ('p sess, 'p sess, 'ss, 'ss) slot
+    -> ('r,'c) role
+    -> ('ss, 'ss, 'c Endpoint.conn data lin) monad
 
   module Shmem : sig
     type 'g channel

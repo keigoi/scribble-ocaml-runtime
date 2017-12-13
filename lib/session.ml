@@ -176,9 +176,8 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
              ([`disconnect of br] sess, p sess, pre, post) slot
              -> (dir,c) role
              -> (br, (dir,c) role * unit data * p sess) lab
-             -> unit
              -> (pre, post, unit lin) LinIO.monad
-    = fun {get;put} dir {_pack} v ->
+    = fun {get;put} dir {_pack} ->
     LinIO.Internal.__monad begin
         fun pre ->
         let s = unsess (get pre) in

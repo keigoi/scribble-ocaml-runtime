@@ -1,5 +1,5 @@
 B ../_build/default/lib
-FLG -open Scribble -ppx '`ocamlfind query ppx_implicits`/ppx_implicits'
+FLG -open Scribble
 PKG linocaml
 PKG ppx_implicits
 PKG ppx_implicits.runtime

@@ -4,10 +4,9 @@ open Linocaml.Lens
 module Make(LinIO:Linocaml.Base.LIN_IO)
            (Chan:Base.CHAN with type 'a io = 'a LinIO.IO.io)
            (RawChan:Base.RAW_DCHAN with type 'a io = 'a LinIO.IO.io)
-           (ConnKind:Base.CONN_KIND with type shmem_chan = RawChan.t)
-: Base.SESSION with type 'a io = 'a LinIO.IO.io and type ('p,'q,'a) monad = ('p,'q,'a) LinIO.monad and module Endpoint.ConnKind = ConnKind
+: Base.SESSION with type 'a io = 'a LinIO.IO.io and type ('p,'q,'a) monad = ('p,'q,'a) LinIO.monad and type shmem_chan = RawChan.t
 = struct
-  module Endpoint = Endpoint.Make(LinIO.IO)(ConnKind)
+  module Endpoint = Endpoint.Make(LinIO.IO)
   module LinIO = LinIO
   module IO = LinIO.IO
   module E = Endpoint
@@ -23,6 +22,9 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
     type ('c,'v) t = ('c -> 'v IO.io, [%imp Receivers]) Ppx_implicits.t
     let unpack : ('c,'v) t -> 'c -> 'v IO.io = fun d -> Ppx_implicits.imp ~d
   end
+
+  type shmem_chan = RawChan.t
+  type 'c Endpoint.conn_kind += Shmem : shmem_chan Endpoint.conn_kind
   module Senders = struct
     let _f = RawChan.send
   end
@@ -229,7 +231,7 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
   module Internal = struct
     (* val __new_connect_later_channel : string list -> ('g,[`Explicit]) channel *)
 
-    let __mkrole : 'c Endpoint.ConnKind.t -> string -> ('r,'c) role = E.create_key
+    let __mkrole : 'c Endpoint.conn_kind -> string -> ('r,'c) role = E.create_key
 
     let to_assoc tbl =
       let r = ref [] in
@@ -239,12 +241,12 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
     let rec create_endpoint myname assoc =
       let ep = Endpoint.create ~myname in
       List.iter (fun (rolename,raw) ->
-          let key = Endpoint.create_key Endpoint.ConnKind.shmem_chan_kind rolename in
+          let key = Endpoint.create_key Shmem rolename in
           Endpoint.attach ep key {Endpoint.handle=raw; close=(fun _ -> IO.return ())})
                 assoc;
       ep
 
-    let __accept : 'g Shmem.channel -> ('r, Endpoint.ConnKind.shmem_chan) role -> ('ss, 'ss, 'p sess) LinIO.monad =
+    let __accept : 'g Shmem.channel -> ('r, shmem_chan) role -> ('ss, 'ss, 'p sess) LinIO.monad =
       fun {Shmem.roles; channels} role ->
 
       (* hashtbl to record sessions between (r1,r2) *)
@@ -290,7 +292,7 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
         return (EP ep)
       end
 
-    let __connect : 'g Shmem.channel -> ('r, Endpoint.ConnKind.shmem_chan) role -> ('ss, 'ss, 'p sess) LinIO.monad =
+    let __connect : 'g Shmem.channel -> ('r, shmem_chan) role -> ('ss, 'ss, 'p sess) LinIO.monad =
       fun {Shmem.roles; channels} myrole ->
       let myname = Endpoint.string_of_key myrole in
       let open IO in

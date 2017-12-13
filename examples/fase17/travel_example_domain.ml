@@ -5,11 +5,24 @@ type 'a ctx = <s : 'a>
 [@@deriving lens]
 [@@runner]
 
+module ImplicitInstances = struct
+  module Senders = struct
+    (* let _f = RawChan.send *)
+    let _msg : [`msg of _] = Obj.magic ()
+  end
+  module Receivers = struct
+    open Tcp
+    let _reject_msg_query {in_;out} : [`reject of _ | `accpt of _ | `query of _] = Obj.magic ()
+  end
+end
+open ImplicitInstances
+open Scribble.Direct
+            
 open Travel1
 
 let travel_c ~conn_A ~conn_S () =
   let role_A = mk_role_A Shmem
-  and role_S = mk_role_S Shmem
+  and role_S = mk_role_S Tcp.Stream
   in
   let%lin #s = initiate_C () in
   let%lin #s = connect s conn_A role_A msg_none () in
@@ -44,7 +57,8 @@ let travel_a me =
     loop ()
 
 let travel_s me =
-  let role_C = mk_role_C Shmem in
+  let role_C = mk_role_C Tcp.Stream
+  in
   let%lin #s = initiate_S () in
   let%lin `msg(_,#s) = accept s me role_C in
   let%lin `pay(address_,#s) = receive s role_C in
@@ -54,7 +68,7 @@ let travel_s me =
 let () =
   Random.self_init ();
   let acpt_A, conn_A = shmem ()
-  and acpt_S, conn_S = shmem ()
+  and acpt_S, conn_S = Tcp.new_domain_channel ()
   in
   ignore @@ Thread.create (run_ctx travel_a) acpt_A;
   ignore @@ Thread.create (run_ctx travel_s) acpt_S;

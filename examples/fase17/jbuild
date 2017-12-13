@@ -6,3 +6,10 @@
   (preprocess (pps (linocaml.ppx linocaml.ppx_lens)))
   (flags ("-short-paths" "-ppx" "`ocamlfind query ppx_implicits`/ppx_implicits"))
   (libraries (scribble linocaml))))
+
+(executable
+ ((name travel_example_domain)
+  (modules (travel_example_domain))
+  (preprocess (pps (linocaml.ppx linocaml.ppx_lens)))
+  (flags ("-short-paths" "-ppx" "`ocamlfind query ppx_implicits`/ppx_implicits"))
+  (libraries (scribble linocaml))))

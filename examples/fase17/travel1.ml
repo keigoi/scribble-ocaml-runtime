@@ -1,6 +1,4 @@
-(* Generated from scribble-ocaml https://github.com/keigoi/scribble-ocaml
- * This code should be compiled with scribble-ocaml-runtime
- * https://github.com/keigoi/scribble-ocaml-runtime *)
+(* Re-written the source generated from Travel1.scr by hand *)
 open Scribble.Direct
 type travel1
 
@@ -51,11 +49,11 @@ let mk_role_C c : ([`C], _) role = Internal.__mkrole c "role_C"
 let mk_role_A c : ([`A], _) role = Internal.__mkrole c "role_A"
 let mk_role_S c : ([`S], _) role = Internal.__mkrole c "role_S"
 
-let initiate_C : 'pre 'post. unit -> ('c, 'c, (_,_) travel1_C sess) monad = fun () ->
+let initiate_C : unit -> ('c, 'c, (_,_) travel1_C sess) monad = fun () ->
   initiate ~myname:"role_C"
-let initiate_A : 'pre 'post. unit -> ('c, 'c, (_,_) travel1_A sess) monad = fun () ->
+let initiate_A : unit -> ('c, 'c, (_,_) travel1_A sess) monad = fun () ->
   initiate ~myname:"role_A"
-let initiate_S : 'pre 'post. unit -> ('c, 'c, (_,_) travel1_S sess) monad = fun () ->
+let initiate_S : unit -> ('c, 'c, (_,_) travel1_S sess) monad = fun () ->
   initiate ~myname:"role_S"
 
 let msg_none = {_pack=(fun a -> `msg(a))}

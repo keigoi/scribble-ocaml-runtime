@@ -20,25 +20,14 @@ module type RAW_DCHAN = sig
   val reverse : t -> t
 end
 
-module type CONN_KIND = sig
-  type 'c t
-  type pair = Pair : 'c t * 'c -> pair
-  val eq : _ t -> _ t -> bool
-  val unpack : 'c t -> pair -> 'c
-
-  type shmem_chan
-  val shmem_chan_kind : shmem_chan t
-end
-
 module type ENDPOINT = sig
-  module ConnKind : CONN_KIND
-
   type +'a io
   type 'c key
+  type 'c conn_kind = ..
 
-  val create_key : 'c ConnKind.t -> string -> 'c key
+  val create_key : 'c conn_kind -> string -> 'c key
   val string_of_key : 'c key -> string
-  val kind_of_key : 'c key -> 'c ConnKind.t
+  val kind_of_key : 'c key -> 'c conn_kind
 
   type 'c conn = {handle: 'c; close: unit -> unit io}
   type 'c connector = unit -> 'c conn io
@@ -71,11 +60,14 @@ module type SESSION = sig
   module Receiver : sig
     type ('c,'v) t = ('c -> 'v io, [%imp Receivers]) Ppx_implicits.t
   end
+
+  type shmem_chan
+  type 'c Endpoint.conn_kind += Shmem : shmem_chan Endpoint.conn_kind
   module Senders : sig
-    val _f : Endpoint.ConnKind.shmem_chan -> 'v -> unit io
+    val _f : shmem_chan -> 'v -> unit io
   end
   module Receivers : sig
-    val _f : Endpoint.ConnKind.shmem_chan -> 'v io
+    val _f : shmem_chan -> 'v io
   end
 
   type 'a lin = 'a Linocaml.Base.lin
@@ -160,8 +152,8 @@ module type SESSION = sig
   end
 
   module Internal : sig
-    val __mkrole : 'c Endpoint.ConnKind.t -> string -> ('r,'c) role
-    val __accept : 'g Shmem.channel -> ('r, Endpoint.ConnKind.shmem_chan) role -> ('ss, 'ss, 'p sess) monad
-    val __connect : 'g Shmem.channel -> ('r, Endpoint.ConnKind.shmem_chan) role -> ('ss, 'ss, 'p sess) monad
+    val __mkrole : 'c Endpoint.conn_kind -> string -> ('r,'c) role
+    val __accept : 'g Shmem.channel -> ('r, shmem_chan) role -> ('ss, 'ss, 'p sess) monad
+    val __connect : 'g Shmem.channel -> ('r, shmem_chan) role -> ('ss, 'ss, 'p sess) monad
   end
 end

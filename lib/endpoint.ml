@@ -1,30 +1,38 @@
     
-module Make(IO:Linocaml.Base.IO)(ConnKind:Base.CONN_KIND)
-: Base.ENDPOINT with module ConnKind = ConnKind and type 'a io = 'a IO.io
+module Make(IO:Linocaml.Base.IO)
+: Base.ENDPOINT with type 'a io = 'a IO.io
 = struct
-  module ConnKind = ConnKind
   type +'a io = 'a IO.io
 
   type 'c conn = {handle: 'c; close: unit -> unit IO.io}
+  type 'c conn_kind = ..
   type 'c connector = unit -> 'c conn IO.io
   type 'c acceptor  = unit -> 'c conn IO.io
+                    
+  type pair = Pair : 'c conn_kind * 'c -> pair
+  let unpack : 'c conn_kind -> pair -> 'c =
+    fun _ (Pair(_,p)) -> Obj.magic p
+
+  let conn_kind_eq : 'c1 'c2. 'c1 conn_kind -> 'c2 conn_kind -> bool =
+    fun k1 k2 ->
+    k1 = Obj.magic k2
 
   module MapKey = struct
-    type 'a key = Key : 'a ConnKind.t * string -> 'a conn key
+    type 'a key = Key : 'a conn_kind * string -> 'a conn key
     type pair = Pair : 'a key * 'a -> pair
 
     let equal : type a b. a key -> b key -> bool = fun k1 k2 ->
-      match k1, k2 with (Key(k1,str1)), (Key(k2,str2)) -> ConnKind.eq k1 k2 && str1=str2
+      match k1, k2 with (Key(k1,str1)), (Key(k2,str2)) -> conn_kind_eq k1 k2 && str1=str2
 
     let unpack : type a. a key -> pair -> a = fun k pair ->
       match k, pair with
       | Key(k1, _), Pair(Key(k2,_),{handle;close}) ->
-         let h = ConnKind.unpack k1 (ConnKind.Pair(k2,handle)) in
+         let h = unpack k1 (Pair(k2,handle)) in
          {handle=h;close}
   end
   module Map = GHashtbl.Make(MapKey)
 
-  type 'a key = 'a ConnKind.t * string
+  type 'a key = 'a conn_kind * string
 
   let create_key kind str = kind, str
   let string_of_key (_,str) = str

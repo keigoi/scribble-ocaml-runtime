@@ -103,7 +103,7 @@ module type SESSION = sig
     ([ `send of 'br ] sess, 'p sess, 'pre, 'mid) slot ->
     ('dir,'c) role -> ('br, ('dir,'c) role * 'q sess * 'p sess) lab ->
     ('q sess, empty, 'mid, 'post) slot ->
-    ('pre, 'post, unit) monad
+    ('pre, 'post, unit lin) monad
 
   (** invariant: 'br must be [`tag of 'a * 'b sess] *)
   val receive :
@@ -114,13 +114,13 @@ module type SESSION = sig
 
   val close :
     ([ `close ] sess, empty, 'pre, 'post) slot ->
-    ('pre, 'post, unit) monad
+    ('pre, 'post, unit lin) monad
 
   val connect :
     ?_sender:('c,'br) Sender.t ->
-    ([ `send of 'br ] sess, 'p sess, 'pre, 'post) slot ->
+    ([ `send of 'br ] sess, empty, 'pre, 'post) slot ->
     'c Endpoint.connector ->
-    ('dir,'c) role -> ('br, ('dir,'c) role connect * 'v data * 'p sess) lab -> 'v -> ('pre, 'post, unit) monad
+    ('dir,'c) role -> ('br, ('dir,'c) role connect * 'v data * 'p sess) lab -> 'v -> ('pre, 'post, 'p sess) monad
 
   (** invariant: 'br must be [`tag of 'a * 'b sess] *)
   val accept :
@@ -132,15 +132,15 @@ module type SESSION = sig
 
   val disconnect :
     ([ `disconnect of 'br ] sess, 'p sess, 'pre, 'post) slot ->
-    ('dir,'c) role -> ('br, ('dir,'c) role * unit data * 'p sess) lab -> unit -> ('pre, 'post, unit) monad
+    ('dir,'c) role -> ('br, ('dir,'c) role * unit data * 'p sess) lab -> unit -> ('pre, 'post, unit lin) monad
 
-  val create : myname:string -> ('c, 'c, 'p sess) monad
+  val initiate : myname:string -> ('c, 'c, 'p sess) monad
 
   val attach :
-    ('p sess, 'p sess, 'ss, 'ss) slot -> ('r,'c) role -> 'c Endpoint.conn -> ('ss, 'ss, unit) monad
+    ('p sess, 'p sess, 'ss, 'ss) slot -> ('r,'c) role -> 'c Endpoint.conn -> ('ss, 'ss, unit lin) monad
 
   val detach :
-    ('p sess, 'p sess, 'ss, 'ss) slot -> ('r,'c) role -> ('ss, 'ss, 'c Endpoint.conn data) monad
+    ('p sess, 'p sess, 'ss, 'ss) slot -> ('r,'c) role -> ('ss, 'ss, 'c Endpoint.conn data lin) monad
 
   module Shmem : sig
     type 'g channel

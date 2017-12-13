@@ -5,7 +5,7 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
            (Chan:Base.CHAN with type 'a io = 'a LinIO.IO.io)
            (RawChan:Base.RAW_DCHAN with type 'a io = 'a LinIO.IO.io)
            (ConnKind:Base.CONN_KIND with type shmem_chan = RawChan.t)
-: Base.SESSION with type 'a io = 'a LinIO.IO.io and type ('p,'q,'a) monad = ('p,'q,'a) LinIO.monad
+: Base.SESSION with type 'a io = 'a LinIO.IO.io and type ('p,'q,'a) monad = ('p,'q,'a) LinIO.monad and module Endpoint.ConnKind = ConnKind
 = struct
   module Endpoint = Endpoint.Make(LinIO.IO)(ConnKind)
   module LinIO = LinIO
@@ -75,7 +75,7 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
              -> (dir,c) role
              -> (br, (dir,c) role * q sess * p sess) lab
              -> (q sess, empty, mid, post) slot
-             -> (pre, post, unit) LinIO.monad
+             -> (pre, post, unit lin) LinIO.monad
     = fun ?_sender {get=get1;put=put1} dir {_pack} {get=get2;put=put2} ->
     LinIO.Internal.__monad begin
         fun pre ->
@@ -88,7 +88,7 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
         let open IO in
         (* we put Dummy for 'p sess part since the connection hash should not be shared with the others *)
         sender c.E.handle (_pack (dir,t,Lin_Internal__ Dummy)) >>= fun _ ->
-        return (put2 mid Linocaml.Base.Empty, ())
+        return (put2 mid Linocaml.Base.Empty, Lin_Internal__ ())
       end
 
   (** invariant: 'br must be [`tag of 'a * 'b sess] *)
@@ -115,25 +115,25 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
 
   let close
       : type pre post.
-             ([`close] sess, empty, pre, post) slot -> (pre, post, unit) LinIO.monad
+             ([`close] sess, empty, pre, post) slot -> (pre, post, unit lin) LinIO.monad
     = fun {get;put} ->
     LinIO.Internal.__monad begin
         fun pre ->
         let s = unsess (get pre) in
         print_endline (E.myname s ^ ": close");
         (* E.close s >>= fun _ -> *)
-        IO.return (put pre Empty, ())
+        IO.return (put pre Empty, Lin_Internal__ ())
       end
 
   let connect
       : type br dir c v p q pre post.
              ?_sender:(c,br) Sender.t
-             -> ([`send of br] sess, p sess, pre, post) slot
+             -> ([`send of br] sess, empty, pre, post) slot
              -> c Endpoint.connector
              -> (dir,c) role
              -> (br, (dir,c) role connect * v data * p sess) lab
              -> v
-             -> (pre, post, unit) LinIO.monad
+             -> (pre, post, p sess) LinIO.monad
     = fun ?_sender {get;put} connector dir {_pack} v ->
     LinIO.Internal.__monad begin
         fun pre ->
@@ -144,7 +144,7 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
         connector () >>= fun conn ->
         E.attach s dir conn;
         sender conn.E.handle (_pack (dir,Data_Internal__ v,Lin_Internal__ Dummy)) >>= fun () ->
-        return (put pre (Lin_Internal__ (EP s)), ())
+        return (put pre Empty, Lin_Internal__ (EP s))
       end
 
   (** invariant: 'br must be [`tag of 'a * 'b sess] *)
@@ -177,7 +177,7 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
              -> (dir,c) role
              -> (br, (dir,c) role * unit data * p sess) lab
              -> unit
-             -> (pre, post, unit) LinIO.monad
+             -> (pre, post, unit lin) LinIO.monad
     = fun {get;put} dir {_pack} v ->
     LinIO.Internal.__monad begin
         fun pre ->
@@ -185,10 +185,10 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
         print_endline (E.myname s ^ ": disconnect from " ^ E.string_of_key dir);
         let open IO in
         E.close s >>= fun _ ->
-        return (put pre (Lin_Internal__ (EP s)), ())
+        return (put pre (Lin_Internal__ (EP s)), Lin_Internal__ ())
       end
 
-  let create : myname:string -> ('c, 'c, 'p sess) LinIO.monad
+  let initiate : myname:string -> ('c, 'c, 'p sess) LinIO.monad
     = fun ~myname ->
     LinIO.Internal.__monad begin
         fun pre ->
@@ -197,23 +197,23 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
       end
 
   let attach :
-        ('p sess, 'p sess, 'ss, 'ss) slot -> ('r,'c) role -> 'c Endpoint.conn -> ('ss, 'ss, unit) LinIO.monad
+        ('p sess, 'p sess, 'ss, 'ss) slot -> ('r,'c) role -> 'c Endpoint.conn -> ('ss, 'ss, unit lin) LinIO.monad
     = fun {get;put} dir conn ->
     LinIO.Internal.__monad begin
         fun pre ->
         let s = unsess (get pre) in
         E.attach s dir conn;
-        IO.return (pre, ())
+        IO.return (pre, Lin_Internal__ ())
       end
 
   let detach :
-        ('p sess, 'p sess, 'ss, 'ss) slot -> ('r, 'c) role -> ('ss, 'ss, 'c Endpoint.conn data) LinIO.monad
+        ('p sess, 'p sess, 'ss, 'ss) slot -> ('r, 'c) role -> ('ss, 'ss, 'c Endpoint.conn data lin) LinIO.monad
     = fun {get;put} dir ->
     LinIO.Internal.__monad begin
         fun pre ->
         let s = unsess (get pre) in
         let conn = E.detach s dir in
-        IO.return (pre, Data_Internal__ conn)
+        IO.return (pre, Lin_Internal__ (Data_Internal__ conn))
       end
 
   module Shmem = struct

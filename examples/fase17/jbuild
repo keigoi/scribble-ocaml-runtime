@@ -1,0 +1,8 @@
+(jbuild_version 1)
+
+(executable
+ ((name travel_example)
+  (modules (travel1 travel_example))
+  (preprocess (pps (linocaml.ppx linocaml.ppx_lens)))
+  (flags ("-short-paths" "-ppx" "`ocamlfind query ppx_implicits`/ppx_implicits"))
+  (libraries (scribble linocaml))))

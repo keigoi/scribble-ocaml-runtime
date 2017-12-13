@@ -27,9 +27,13 @@ module ConnKind = struct
   type shmem_chan = RawChan.t
   let shmem_chan_kind = Shmem
 end
-               
+
 include Session.Make
           (Linocaml.Direct)
           (Chan)
           (RawChan)
           (ConnKind)
+
+let shmem () =
+  let handle = RawChan.create () in
+  (fun () -> {Endpoint.handle; close=(fun _ -> ())}), (fun () -> {Endpoint.handle=RawChan.reverse handle; close=(fun _ -> ())})

@@ -156,3 +156,11 @@ module type SESSION = sig
     val __initiate : myname:string -> ('c, 'c, 'p sess) monad
   end
 end
+
+module type TCP = sig
+  module Endpoint : ENDPOINT
+  type stream
+  type _ Endpoint.conn_kind += Stream : stream Endpoint.conn_kind
+  val connector : host:string -> port:int -> stream Endpoint.connector
+  val new_domain_channel : unit -> (stream Endpoint.connector * stream Endpoint.acceptor) Endpoint.io
+end

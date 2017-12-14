@@ -16,12 +16,11 @@ include Session.Make
           (Chan)
           (RawChan)
 
-let shmem () =
-  let handle = RawChan.create () in
-  (fun () -> {Endpoint.handle; close=(fun _ -> ())}), (fun () -> {Endpoint.handle=RawChan.reverse handle; close=(fun _ -> ())})
+type stream_ = {in_:in_channel; out:out_channel}
 
-module Tcp = struct
-  type stream = {in_:in_channel; out:out_channel}
+module Tcp : Base.TCP with module Endpoint = Endpoint and type stream = stream_ = struct
+  module Endpoint = Endpoint
+  type stream = stream_  = {in_:in_channel; out:out_channel}
   type _ Endpoint.conn_kind += Stream : stream Endpoint.conn_kind
 
   let make (fi, fo) =
@@ -50,3 +49,7 @@ module Tcp = struct
         let sock_serv, _ = Unix.(accept sock_listen) in
         make (sock_serv, sock_serv))
 end
+
+let shmem () =
+  let handle = RawChan.create () in
+  (fun () -> {Endpoint.handle; close=(fun _ -> ())}), (fun () -> {Endpoint.handle=RawChan.reverse handle; close=(fun _ -> ())})

@@ -54,9 +54,12 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
 
   (** invariant: 'br must be [`tag of 'a * 'b * 'c sess] *)
   let send : type c v br p pre post r p.
-                  ?_sender:(c,br) Sender.t ->
-                  ([ `send of br ] sess, empty, pre, post) slot ->
-                  (r,c) role -> (br, (r,c) role * v data * p sess) lab -> v -> (pre, post, p sess) LinIO.monad
+                  ?_sender:(c,br) Sender.t
+                  -> ([ `send of br ] sess, empty, pre, post) slot
+                  -> (r,c) role
+                  -> (br, (r,c) role * v data * p sess) lab
+                  -> v
+                  -> (pre, post, p sess) LinIO.monad
     = fun ?_sender {get;put} dir {_pack} v ->
     LinIO.Internal.__monad begin
         fun pre ->

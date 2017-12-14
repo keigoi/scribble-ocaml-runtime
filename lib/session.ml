@@ -99,14 +99,14 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
         return (put2 mid Linocaml.Base.Empty, Lin_Internal__ ())
       end
 
-  let real_receive s receiver c = 
+  let real_receive s receiver c =
     let open IO in
     receiver c.E.handle >>= fun br ->
     (* we must replace 'p sess part, since the part in payload is Dummy (see send) *)
     let br = Unsafe.replace_sess_part (Obj.repr br) (Obj.repr (Lin_Internal__ (EP s))) in
     let br = Obj.obj br in
     return br
-    
+
   (** invariant: 'br must be [`tag of 'a * 'b sess] *)
   let receive
       :  type br dir c p pre xx post v.
@@ -198,14 +198,6 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
         let open IO in
         E.close s >>= fun _ ->
         return (put pre (Lin_Internal__ (EP s)), Lin_Internal__ ())
-      end
-
-  let initiate : myname:string -> ('c, 'c, 'p sess) LinIO.monad
-    = fun ~myname ->
-    LinIO.Internal.__monad begin
-        fun pre ->
-        let s = E.create ~myname in
-        IO.return (pre, (Lin_Internal__ (EP s)))
       end
 
   let attach :
@@ -312,6 +304,14 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
           Chan.receive (Hashtbl.find channels myname) >>= fun sess ->
           let ep = create_endpoint myname (to_assoc sess) in
           return (EP ep)
+        end
+
+    let __initiate : myname:string -> ('c, 'c, 'p sess) LinIO.monad
+      = fun ~myname ->
+      LinIO.Internal.__monad begin
+          fun pre ->
+          let s = E.create ~myname in
+          IO.return (pre, (Lin_Internal__ (EP s)))
         end
   end
 end

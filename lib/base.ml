@@ -133,8 +133,6 @@ module type SESSION = sig
     -> ('br, ('dir,'c) role * unit data * 'p sess) lab
     -> ('pre, 'post, unit lin) monad
 
-  val initiate : myname:string -> ('c, 'c, 'p sess) monad
-
   val attach :
     ('p sess, 'p sess, 'ss, 'ss) slot
     -> ('r,'c) role
@@ -155,5 +153,6 @@ module type SESSION = sig
     val __mkrole : 'c Endpoint.conn_kind -> string -> ('r,'c) role
     val __accept : 'g Shmem.channel -> ('r, shmem_chan) role -> ('ss, 'ss, 'p sess) monad
     val __connect : 'g Shmem.channel -> ('r, shmem_chan) role -> ('ss, 'ss, 'p sess) monad
+    val __initiate : myname:string -> ('c, 'c, 'p sess) monad
   end
 end

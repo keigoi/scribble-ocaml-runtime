@@ -36,8 +36,9 @@ let travel_a me =
     let rec loop () =
       match%lin receive s role_C with
       |`query(destination,#s) ->
-          let%lin #s = send s role_C msg_quote (Random.int 100) in
-          loop ()
+        print_endline ("destination:" ^destination);
+        let%lin #s = send s role_C msg_quote (Random.int 100) in
+        loop ()
       |`accpt(_,#s) -> close s
       |`reject(_,#s) -> (print_endline "rejected"; close s)
     in

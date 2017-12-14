@@ -6,17 +6,61 @@ type 'a ctx = <s : 'a>
 [@@runner]
 
 module ImplicitInstances = struct
+  let output_line out str = output_string out (str^"\n"); flush out
   module Senders = struct
-    (* let _f = RawChan.send *)
-    let _msg : [`msg of _] = Obj.magic ()
+    include Senders
+    open Tcp
+       
+    let _reject_msg_query {out} :
+          [`reject of _ | `msg of _ | `query of _] -> unit =
+      function
+      | `reject (_,_,_) -> output_line out "reject"
+      | `msg (_,_,_) -> output_line out "msg"
+      | `query (_,Linocaml.Base.Data_Internal__ qstr,_) ->
+         output_line out "query";
+         output_line out qstr
+         
+    let _quote {out} : [`quote of _] -> unit = function
+      | `quote(_,Linocaml.Base.Data_Internal__ price, _) ->
+         output_line out "quote";
+         output_line out (string_of_int price)
+         
+    let _pay {out} : [`pay of _] -> unit = function
+      | `pay(_,Linocaml.Base.Data_Internal__ addr, _) ->
+         output_line out "pay";
+         output_line out addr
+         
+    let _confirm {out} : [`confirm of _] -> unit = function
+      | `confirm(_,Linocaml.Base.Data_Internal__ id,_) ->
+         output_line out "confirm";
+         output_line out (string_of_int id)
   end
   module Receivers = struct
+    include Receivers
     open Tcp
-    let _reject_msg_query {in_;out} : [`reject of _ | `accpt of _ | `query of _] = Obj.magic ()
+    let _confirm {in_} : [`confirm of _] =
+      match input_line in_ with
+      | "confirm" ->
+         let id = int_of_string (input_line in_) in
+         `confirm(Linocaml.Base.Data_Internal__ id, Obj.magic ())
+      | str -> failwith ("unknown token:"^ str)
+               
+    let _msg {in_} : [`msg of _] =
+      print_endline "_msg called";
+      match input_line in_ with
+      | "msg" ->
+         `msg(Linocaml.Base.Data_Internal__ (), Obj.magic ())
+      | str -> failwith ("unknown token:"^ str)
+           
+    let _pay {in_} : [`pay of _] =
+      let line1 = input_line in_ in
+      let line2 = input_line in_ in
+      match line1, line2 with
+      | "pay", str -> `pay(Linocaml.Base.Data_Internal__ str, Obj.magic ())
+      | _ -> failwith ("unknown token:" ^line1)
   end
 end
 open ImplicitInstances
-open Scribble.Direct
             
 open Travel1
 
@@ -49,8 +93,9 @@ let travel_a me =
     let rec loop () =
       match%lin receive s role_C with
       |`query(destination,#s) ->
-          let%lin #s = send s role_C msg_quote (Random.int 100) in
-          loop ()
+        print_endline ("destination:" ^destination);
+        let%lin #s = send s role_C msg_quote (Random.int 100) in
+        loop ()
       |`accpt(_,#s) -> close s
       |`reject(_,#s) -> (print_endline "rejected"; close s)
     in

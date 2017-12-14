@@ -26,7 +26,9 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
   type shmem_chan = RawChan.t
   type 'c Endpoint.conn_kind += Shmem : shmem_chan Endpoint.conn_kind
   module Senders = struct
-    let _f = RawChan.send
+    let _f c br =
+      let br = Unsafe.remove_role_part (Obj.repr br) in
+      RawChan.send c (Obj.obj br)
   end
   module Receivers = struct
     let _f = RawChan.receive
@@ -68,6 +70,7 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
         let c = E.get_connection s dir in
         let sender = Sender.unpack @@ untrans _sender in
         let open IO in
+        (* we put Dummy for 'p sess part since the connection hash should not be shared with the others *)
         sender c.E.handle (_pack (dir,Data_Internal__ v,Lin_Internal__ Dummy)) >>= fun () ->
         return (put pre Empty, Lin_Internal__ (EP s))
       end
@@ -96,6 +99,14 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
         return (put2 mid Linocaml.Base.Empty, Lin_Internal__ ())
       end
 
+  let real_receive s receiver c = 
+    let open IO in
+    receiver c.E.handle >>= fun br ->
+    (* we must replace 'p sess part, since the part in payload is Dummy (see send) *)
+    let br = Unsafe.replace_sess_part (Obj.repr br) (Obj.repr (Lin_Internal__ (EP s))) in
+    let br = Obj.obj br in
+    return br
+    
   (** invariant: 'br must be [`tag of 'a * 'b sess] *)
   let receive
       :  type br dir c p pre xx post v.
@@ -111,9 +122,7 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
         let c = E.get_connection s dir in
         let receiver = Receiver.unpack @@ untrans _receiver in
         let open IO in
-        receiver c.E.handle >>= fun (br : br) ->
-        (* we must replace 'p sess part, since the part in payload is Dummy (see send) *)
-        let br = Unsafe.obj_conv_msg br (Lin_Internal__ (EP s)) in
+        real_receive s receiver c >>= fun (br : br) ->
         print_endline (E.myname s ^ ": received");
         return (put pre Empty, Lin_Internal__ br)
       end
@@ -169,9 +178,8 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
         acceptor () >>= fun conn ->
         E.attach s dir conn;
         let receiver = Receiver.unpack @@ untrans _receiver in
-        receiver conn.E.handle >>= fun (br : br)(*polyvar*) ->
+        real_receive s receiver conn >>= fun (br : br)(*polyvar*) ->
         (* we must replace 'p sess part, since the part in payload is Dummy (see send) *)
-        let br = Unsafe.obj_conv_msg br (Lin_Internal__ (EP s)) in
         print_endline (E.myname s ^ ": received");
         return (put pre Empty, Lin_Internal__ br)
       end

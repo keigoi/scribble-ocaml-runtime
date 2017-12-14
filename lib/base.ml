@@ -87,7 +87,8 @@ module type SESSION = sig
   val send :
     ?_sender:('c,'br) Sender.t
     -> ([ `send of 'br ] sess, empty, 'pre, 'post) slot
-    -> ('dir,'c) role -> ('br, ('dir,'c) role * 'v data * 'p sess) lab
+    -> ('dir,'c) role
+    -> ('br, ('dir,'c) role * 'v data * 'p sess) lab
     -> 'v
     -> ('pre, 'post, 'p sess) monad
 
@@ -128,10 +129,9 @@ module type SESSION = sig
     -> ('pre, 'post, 'br lin) monad
 
   val disconnect :
-    ([ `disconnect of 'br ] sess, 'p sess, 'pre, 'post) slot
+    ([ `disconnect of ('dir,'c) role * 'p sess] sess, empty, 'pre, 'post) slot
     -> ('dir,'c) role
-    -> ('br, ('dir,'c) role * unit data * 'p sess) lab
-    -> ('pre, 'post, unit lin) monad
+    -> ('pre, 'post, 'p sess) monad
 
   val attach :
     ('p sess, 'p sess, 'ss, 'ss) slot

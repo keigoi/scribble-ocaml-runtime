@@ -185,19 +185,18 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
       end
 
   let disconnect
-      : type br dir c v p q pre post.
-             ([`disconnect of br] sess, p sess, pre, post) slot
+      : type dir c v p q pre post.
+             ([`disconnect of (dir,c) role * p sess] sess, empty, pre, post) slot
              -> (dir,c) role
-             -> (br, (dir,c) role * unit data * p sess) lab
-             -> (pre, post, unit lin) LinIO.monad
-    = fun {get;put} dir {_pack} ->
+             -> (pre, post, p sess) LinIO.monad
+    = fun {get;put} dir ->
     LinIO.Internal.__monad begin
         fun pre ->
         let s = unsess (get pre) in
         print_endline (E.myname s ^ ": disconnect from " ^ E.string_of_key dir);
         let open IO in
         E.close s >>= fun _ ->
-        return (put pre (Lin_Internal__ (EP s)), Lin_Internal__ ())
+        return (put pre Empty, Lin_Internal__ (EP s))
       end
 
   let attach :

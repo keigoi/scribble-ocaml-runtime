@@ -5,12 +5,17 @@ type 'a ctx = <s : 'a>
 [@@deriving lens]
 [@@runner]
 
-module ImplicitInstances = struct
-  let output_line out str = output_string out (str^"\n"); flush out
+module MyParsersAndPrinters = struct
+  let escape = String.escaped
+  let unescape s = Scanf.sscanf ("\"" ^ s ^ "\"") "%S" (fun u -> u)
+
+  let output_line out str = output_string out (escape str^"\n"); flush out
+  let input_line in_ = unescape @@ input_line in_
+
   module Senders = struct
     include Senders
     open Tcp
-       
+
     let _reject_msg_query {out} :
           [`reject of _ | `msg of _ | `query of _] -> unit =
       function
@@ -19,17 +24,17 @@ module ImplicitInstances = struct
       | `query (_,Linocaml.Base.Data_Internal__ qstr,_) ->
          output_line out "query";
          output_line out qstr
-         
+
     let _quote {out} : [`quote of _] -> unit = function
       | `quote(_,Linocaml.Base.Data_Internal__ price, _) ->
          output_line out "quote";
          output_line out (string_of_int price)
-         
+
     let _pay {out} : [`pay of _] -> unit = function
       | `pay(_,Linocaml.Base.Data_Internal__ addr, _) ->
          output_line out "pay";
          output_line out addr
-         
+
     let _confirm {out} : [`confirm of _] -> unit = function
       | `confirm(_,Linocaml.Base.Data_Internal__ id,_) ->
          output_line out "confirm";
@@ -44,14 +49,14 @@ module ImplicitInstances = struct
          let id = int_of_string (input_line in_) in
          `confirm(Linocaml.Base.Data_Internal__ id, Obj.magic ())
       | str -> failwith ("unknown token:"^ str)
-               
+
     let _msg {in_} : [`msg of _] =
       print_endline "_msg called";
       match input_line in_ with
       | "msg" ->
          `msg(Linocaml.Base.Data_Internal__ (), Obj.magic ())
       | str -> failwith ("unknown token:"^ str)
-           
+
     let _pay {in_} : [`pay of _] =
       let line1 = input_line in_ in
       let line2 = input_line in_ in
@@ -60,8 +65,8 @@ module ImplicitInstances = struct
       | _ -> failwith ("unknown token:" ^line1)
   end
 end
-open ImplicitInstances
-            
+open MyParsersAndPrinters
+
 open Travel1
 
 let travel_c ~conn_A ~conn_S () =

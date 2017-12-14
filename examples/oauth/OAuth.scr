@@ -1,0 +1,163 @@
+module OAuth;
+type <java> "java.lang.String" from "rt.jar" as URL;
+type <java> "java.lang.String" from "rt.jar" as Form;
+type <java> "java.lang.String" from "rt.jar" as Scope;
+type <java> "java.lang.String" from "rt.jar" as Id;
+type <java> "java.lang.String" from "rt.jar" as Pass;
+type <java> "java.lang.String" from "rt.jar" as Code;
+type <java> "java.lang.String" from "rt.jar" as AccessToken;
+
+explicit global protocol OAuth(role U, role C, role A)
+{
+	// Starts OAuth. Client redirects User to Auth server
+	oauth() connect U to C;
+	302(URL, URL) from C to U;
+	/* 302(URL, backurl:URL) from C to U; @"open=U" // remember the Client URL to go back in future at (1)  */
+	disconnect U and C;
+
+	// After redirection, User gets a login form.
+	authorize_request(URL) connect U to A;
+	/* authorize(backurl) connect U to A; */
+	200(Form,Scope) from A to U;
+	disconnect U and A;
+
+	// and POSTs username and password.
+	submit(Id,Pass) connect U to A;
+
+	choice at A {
+		// login fails.
+		400() from A to U;
+		disconnect U and A;
+
+		login_fail(URL) connect U to C;
+		/* fail(backurl) connect U to C; @"port=backurl" */
+		200() from C to U;
+	} or {
+		// login successes.
+		// Auth server sends back a 'code'
+		// which is later exchanged for AccessToken at (2),
+		// and redirects User back to client
+
+		302(Code) from A to U;
+		/* 302(code:Code) from A to U; @"open=C" */
+		disconnect U and A;
+
+
+		// User sends the code to Client at redir URL
+
+		success(URL,Code) connect U to C;
+		/* success(backurl,code) connect U to C; @"port=backurl" // -- (1) */
+
+		// then Client gets AcceessToken from AuthServer
+
+		// connect C to A; @"port=code" // -- (2)
+		tokens(Code) connect C to A;
+		200(AccessToken) from A to C;
+		disconnect C and A;
+
+		200() from C to U;
+		disconnect C and U;
+	}
+}
+
+// Junk
+/*
+explicit global protocol OAuth_(role U, role C, role A)
+{
+	connect U to C;
+	oauth() from U to C;
+	302(redir:URL) from C to U; @"open=U"
+	disconnect U and C;
+
+	connect U to A;
+	authorize(redir) from U to A;
+	200(Form) from A to U;
+	disconnect A and U;
+
+	connect U to A;
+	login(Id,Pass) from U to A;
+	302(redir,Code) from A to U;
+	disconnect A and U;
+
+	connect U to C; @"port=p"
+	get(redir,Code) from U to C;
+
+	connect C to A;
+	tokens(Code) C to A;
+	200(AccToken,RefToken) A to C;
+	disconnect C and A;
+
+	200() from C to U;
+	disconnect U and C;
+}
+
+explicit global protocol OAuth_(role R, role B, role C, role S)
+{
+	connect R to C;
+
+	init() from R to C;
+	200(ClientId) from C to R;
+	open(URL) from R to B;
+
+	connect B to S;
+	get(URL) from B to S;
+	200(Form) from S to B;
+	postAuth(Id,Pass) from B to S;
+	302(URL,AuthCode) from S to B;
+	disconnect B and S;
+
+	open(URL,AuthCode) from B to C;
+	200() from C to B;
+
+	success(URL,AuthCode) from B to R;
+
+	choice at R {
+	   api1(AuthCode) from R to C;
+	   api1(AuthCode) from C to S;
+	   200(API1Res) from S to C;
+	   200(API1Res) from C to R;
+	} or {
+	   api2(AuthCode,Param) from R to C;
+	   api2(AuthCode) from C to S;
+	   200(API2Res) from S to C;
+	   200(Api2Res) from C to R;
+	}
+}
+
+explicit global protocol OAuth(role B, role C, role S)
+{
+	(AuthURL) from C to B;
+
+	get(URL) from B to S;
+	200(Form) from S to B;
+	postAuth(Id,Pass) from B to S;
+	200(AuthCode) from S to B;
+
+	success(AuthCode) from B to C;
+
+	choice at R {
+	   api1(AuthCode) from C to S;
+	   200(API1Res) from S to C;
+	} or {
+	   api2(AuthCode) from C to S;
+	   200(API2Res) from S to C;
+	}
+}
+
+explicit global protocol OAuth(role U, role C, role S)
+{
+	print(AuthURL) from C to U;
+	read_line(PIN) from U to C;
+
+	fetch_access_token(PIN) from C to S;
+	ok(AccessToken) from S to C;
+
+	choice at C {
+	   api1(AuthCode) from C to S;
+	   200(API1Res) from S to C;
+	} or {
+	   api2(AuthCode) from C to S;
+	   200(API2Res) from S to C;
+	}
+}
+*/

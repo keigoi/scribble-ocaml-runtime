@@ -1,0 +1,7 @@
+(jbuild_version 1)
+
+(executable
+ ((name oauth_server)
+  (preprocess (pps (linocaml.ppx linocaml.ppx_lens)))
+  (flags ("-short-paths" "-ppx" "`ocamlfind query ppx_implicits`/ppx_implicits -debug-resolve"))
+  (libraries (scribble.lwt linocaml.lwt cohttp-lwt-unix))))

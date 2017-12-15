@@ -2,6 +2,7 @@ open Linocaml.Base
 open Linocaml.Lens
 
 module Make(LinIO:Linocaml.Base.LIN_IO)
+           (IOExn:Base.IO_EXN with type 'a io = 'a LinIO.IO.io)
            (Chan:Base.CHAN with type 'a io = 'a LinIO.IO.io)
            (RawChan:Base.RAW_DCHAN with type 'a io = 'a LinIO.IO.io)
 : Base.SESSION with type 'a io = 'a LinIO.IO.io and type ('p,'q,'a) monad = ('p,'q,'a) LinIO.monad and type shmem_chan = RawChan.t
@@ -10,6 +11,8 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
   module LinIO = LinIO
   module IO = LinIO.IO
   module E = Endpoint
+
+  exception AcceptAgain
 
   type 'a io = 'a LinIO.IO.io
   type ('p,'q,'a) monad = ('p,'q,'a) LinIO.monad
@@ -41,6 +44,8 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
   type 'p sess_ = EP of Endpoint.t | Dummy
   type 'p sess = 'p sess_ lin
   type 'a connect = 'a
+
+  let dummy = Lin_Internal__ Dummy
 
   type ('br, 'payload) lab = {
       _pack : 'payload -> 'br
@@ -106,6 +111,15 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
     let br = Unsafe.replace_sess_part (Obj.repr br) (Obj.repr (Lin_Internal__ (EP s))) in
     let br = Obj.obj br in
     return br
+
+  let real_accept s acceptor receiver =
+    let open IO in
+    let rec loop () =
+      acceptor.E.try_accept (fun c ->
+          IOExn.try_bind (fun () -> real_receive s receiver c) (fun br -> return @@ Some (c, br)) (function
+              | AcceptAgain -> return None
+              | e -> raise e))
+    in loop ()
 
   (** invariant: 'br must be [`tag of 'a * 'b sess] *)
   let receive
@@ -175,10 +189,9 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
         let s = unsess (get pre) in
         print_endline (E.myname s ^ ": accept from " ^ E.string_of_key dir);
         let open IO in
-        acceptor () >>= fun conn ->
-        E.attach s dir conn;
         let receiver = Receiver.unpack @@ untrans _receiver in
-        real_receive s receiver conn >>= fun (br : br)(*polyvar*) ->
+        real_accept s acceptor receiver >>= fun (conn, br) ->
+        E.attach s dir conn;
         (* we must replace 'p sess part, since the part in payload is Dummy (see send) *)
         print_endline (E.myname s ^ ": received");
         return (put pre Empty, Lin_Internal__ br)

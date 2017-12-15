@@ -1,3 +1,8 @@
+module type IO_EXN = sig
+  type +'a io
+  val try_bind : (unit -> 'a io) -> ('a -> 'b io) -> (exn -> 'b io) -> 'b io
+end
+
 module type CHAN = sig
   type +'a io
   type 'a t
@@ -31,7 +36,7 @@ module type ENDPOINT = sig
 
   type 'c conn = {handle: 'c; close: unit -> unit io}
   type 'c connector = unit -> 'c conn io
-  type 'c acceptor  = unit -> 'c conn io
+  type 'c acceptor  = {try_accept:'a. ('c conn -> 'a option io) -> 'a io}
 
   type t
 
@@ -53,6 +58,8 @@ module type SESSION = sig
   type ('p,'q,'a) monad
 
   module Endpoint : ENDPOINT with type 'a io = 'a io
+
+  exception AcceptAgain
 
   module Sender : sig
     type ('c,'v) t = ('c -> 'v -> unit io, [%imp Senders]) Ppx_implicits.t
@@ -78,6 +85,8 @@ module type SESSION = sig
   type 'p sess_
   type 'p sess = 'p sess_ lin
   type 'a connect
+
+  val dummy : 'p sess
 
   type ('br, 'payload) lab = {
       _pack : 'payload -> 'br

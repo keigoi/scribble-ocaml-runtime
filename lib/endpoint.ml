@@ -1,4 +1,4 @@
-    
+
 module Make(IO:Linocaml.Base.IO)
 : Base.ENDPOINT with type 'a io = 'a IO.io
 = struct
@@ -7,8 +7,8 @@ module Make(IO:Linocaml.Base.IO)
   type 'c conn = {handle: 'c; close: unit -> unit IO.io}
   type 'c conn_kind = ..
   type 'c connector = unit -> 'c conn IO.io
-  type 'c acceptor  = unit -> 'c conn IO.io
-                    
+  type 'c acceptor  = {try_accept:'a. ('c conn -> 'a option io) -> 'a IO.io}
+
   type pair = Pair : 'c conn_kind * 'c -> pair
   let unpack : 'c conn_kind -> pair -> 'c =
     fun _ (Pair(_,p)) -> Obj.magic p
@@ -37,11 +37,11 @@ module Make(IO:Linocaml.Base.IO)
   let create_key kind str = kind, str
   let string_of_key (_,str) = str
   let kind_of_key (k,_) = k
-                             
+
   type t = {myname: string; role2conn : Map.t}
 
   let myname {myname} = myname
-                      
+
   let create : myname:string -> t = fun ~myname ->
     {myname; role2conn=Map.create 42}
 
@@ -54,18 +54,18 @@ module Make(IO:Linocaml.Base.IO)
       | c::cs -> c () >>= fun _ -> close cs
     in
     close !r
-    
-    
+
+
   let connect : t -> 'c key -> 'c connector -> unit IO.io = fun t (k,s) conn ->
     let open IO in
     conn () >>= fun raw ->
     (Map.add t.role2conn (MapKey.Key(k,s)) raw; return ())
-    
+
   let accept : t -> 'c key -> 'c acceptor -> unit IO.io = fun t (k,s) acpt ->
     let open IO in
-    acpt () >>= fun raw ->
+    acpt.try_accept (fun c -> IO.return (Some c)) >>= fun raw ->
     (Map.add t.role2conn (MapKey.Key(k,s)) raw; return ())
-    
+
   let attach : t -> 'c key -> 'c conn -> unit = fun t (k,s) conn ->
     Map.add t.role2conn (MapKey.Key(k,s)) conn
 
@@ -78,4 +78,3 @@ module Make(IO:Linocaml.Base.IO)
     Map.find t.role2conn (MapKey.Key(k,s))
 
 end
-

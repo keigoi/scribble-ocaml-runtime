@@ -16,6 +16,10 @@ module RawChan = Scribble.Unsafe.Make_raw_dchan(Scribble.Dchannel.Make(Chan))
 
 include Scribble.Session.Make
           (Linocaml_lwt)
+          (struct
+            type +'a io = 'a Lwt.t
+            let try_bind = Lwt.try_bind
+          end)
           (Chan)
           (RawChan)
 
@@ -37,11 +41,11 @@ module Tcp : Scribble.Base.TCP with module Endpoint = Endpoint and type stream =
 
   let connector ~host ~port : stream Endpoint.connector =
     fun () ->
-      Lwt_unix.getaddrinfo host (string_of_int port) [] >>= function
-      | [] -> failwith ("Host not found " ^ host)
-      | h::_ ->
-         Lwt_io.open_connection h.Unix.ai_addr >>= fun (ic,oc) ->
-         Lwt.return {Endpoint.handle={in_=ic; out=oc}; close=(fun _ -> Lwt_io.close ic)}
+    Lwt_unix.getaddrinfo host (string_of_int port) [] >>= function
+    | [] -> failwith ("Host not found " ^ host)
+    | h::_ ->
+       Lwt_io.open_connection h.Unix.ai_addr >>= fun (ic,oc) ->
+       Lwt.return {Endpoint.handle={in_=ic; out=oc}; close=(fun _ -> Lwt_io.close ic)}
 
   let new_domain_channel () =
     let open Lwt_unix in
@@ -55,9 +59,11 @@ module Tcp : Scribble.Base.TCP with module Endpoint = Endpoint and type stream =
         let sock_cli = socket PF_UNIX SOCK_STREAM 0 in
         connect sock_cli (ADDR_UNIX path) >>= fun () ->
         Lwt.return @@ make (sock_cli, sock_cli)),
-       (fun () ->
-         accept sock_listen >>= function (sock_serv, _) ->
-         Lwt.return @@ make (sock_serv, sock_serv)))
+       {Endpoint.try_accept = (fun return ->
+         accept sock_listen >>= fun (sock_serv, _) ->
+         return @@ make (sock_serv, sock_serv) >>= function
+                              | Some c -> Lwt.return c
+                              | None -> failwith "session acceptance rejected")})
 end
 
 let shmem () =

@@ -13,6 +13,10 @@ module RawChan = Unsafe.Make_raw_dchan(Dchannel.Make(Chan))
 
 include Session.Make
           (Linocaml.Direct)
+          (struct
+            type +'a io = 'a
+            let try_bind m f h = try f (m ()) with e -> h e
+          end)
           (Chan)
           (RawChan)
 
@@ -45,9 +49,11 @@ module Tcp : Base.TCP with module Endpoint = Endpoint and type stream = stream_ 
         let sock_cli = Unix.(socket PF_UNIX SOCK_STREAM 0) in
         Unix.(connect sock_cli (ADDR_UNIX path));
         make (sock_cli, sock_cli)),
-    (fun () ->
+    {Endpoint.try_accept = (fun return ->
         let sock_serv, _ = Unix.(accept sock_listen) in
-        make (sock_serv, sock_serv))
+        match return @@ make (sock_serv, sock_serv) with
+        | Some c -> c
+        | None -> failwith "session acceptance rejected")}
 end
 
 let shmem () =

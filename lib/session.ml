@@ -71,7 +71,7 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
         let sender = Sender.unpack @@ untrans _sender in
         let open IO in
         (* we put Dummy for 'p sess part since the connection hash should not be shared with the others *)
-        sender c.E.handle (_pack (dir,Data_Internal__ v,Lin_Internal__ Dummy)) >>= fun () ->
+        sender c.E.handle (_pack (dir,Data v,Lin_Internal__ Dummy)) >>= fun () ->
         return (put pre Empty, Lin_Internal__ (EP s))
       end
 
@@ -157,7 +157,7 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
         let open IO in
         connector () >>= fun conn ->
         E.attach s dir conn;
-        sender conn.E.handle (_pack (dir,Data_Internal__ v,Lin_Internal__ Dummy)) >>= fun () ->
+        sender conn.E.handle (_pack (dir,Data v,Lin_Internal__ Dummy)) >>= fun () ->
         return (put pre Empty, Lin_Internal__ (EP s))
       end
 
@@ -216,7 +216,7 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
         fun pre ->
         let s = unsess (get pre) in
         let conn = E.detach s dir in
-        IO.return (pre, Lin_Internal__ (Data_Internal__ conn))
+        IO.return (pre, Lin_Internal__ (Data conn))
       end
 
   module Shmem = struct

@@ -21,22 +21,22 @@ module MyParsersAndPrinters = struct
       function
       | `reject (_,_,_) -> output_line out "reject"
       | `msg (_,_,_) -> output_line out "msg"
-      | `query (_,Linocaml.Base.Data_Internal__ qstr,_) ->
+      | `query (_, Data qstr,_) ->
          output_line out "query";
          output_line out qstr
 
     let _quote {out} : [`quote of _] -> unit = function
-      | `quote(_,Linocaml.Base.Data_Internal__ price, _) ->
+      | `quote(_, Data price, _) ->
          output_line out "quote";
          output_line out (string_of_int price)
 
     let _pay {out} : [`pay of _] -> unit = function
-      | `pay(_,Linocaml.Base.Data_Internal__ addr, _) ->
+      | `pay(_,Data addr, _) ->
          output_line out "pay";
          output_line out addr
 
     let _confirm {out} : [`confirm of _] -> unit = function
-      | `confirm(_,Linocaml.Base.Data_Internal__ id,_) ->
+      | `confirm(_,Data id,_) ->
          output_line out "confirm";
          output_line out (string_of_int id)
   end
@@ -47,21 +47,21 @@ module MyParsersAndPrinters = struct
       match input_line in_ with
       | "confirm" ->
          let id = int_of_string (input_line in_) in
-         `confirm(Linocaml.Base.Data_Internal__ id, Obj.magic ())
+         `confirm(Data id, Obj.magic ())
       | str -> failwith ("unknown token:"^ str)
 
     let _msg {in_} : [`msg of _] =
       print_endline "_msg called";
       match input_line in_ with
       | "msg" ->
-         `msg(Linocaml.Base.Data_Internal__ (), Obj.magic ())
+         `msg(Data (), Obj.magic ())
       | str -> failwith ("unknown token:"^ str)
 
     let _pay {in_} : [`pay of _] =
       let line1 = input_line in_ in
       let line2 = input_line in_ in
       match line1, line2 with
-      | "pay", str -> `pay(Linocaml.Base.Data_Internal__ str, Obj.magic ())
+      | "pay", str -> `pay(Data str, Obj.magic ())
       | _ -> failwith ("unknown token:" ^line1)
   end
 end

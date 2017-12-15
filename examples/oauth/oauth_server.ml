@@ -81,6 +81,7 @@ let http_acceptor ?(host="0.0.0.0") ~port () : cohttp_server Endpoint.acceptor L
   let open Lwt in
   listen (Unix.ADDR_INET(Unix.inet_addr_of_string host, port)) >>= fun lfd ->
   Lwt.return @@ fun () ->
+                print_endline "accept!!";
                 Lwt_unix.accept lfd >>= fun (fd, peer_addr) ->
                 Lwt_unix.setsockopt fd Lwt_unix.TCP_NODELAY true;
                 Lwt.return
@@ -97,27 +98,29 @@ let http_connector ~(host : string) () : cohttp_client Endpoint.connector =
 (* TODO *)
 module HttpParsersAndPrinters = struct
   module Receivers = struct
+    open Lwt
     let _oauth {in_srv} =
-      Lwt.return (`oauth(Linocaml.Base.Data_Internal__ (), Obj.magic ()))
+      Lwt_stream.get in_srv >>= fun _ ->
+      Lwt.return (`oauth(Data (), Obj.magic ()))
 
     let _login_fail_or_success {in_srv} =
       if true
       then
-        Lwt.return (`login_fail(Linocaml.Base.Data_Internal__ (Obj.magic ()), Obj.magic ()))
+        Lwt.return (`login_fail(Data (Obj.magic ()), Obj.magic ()))
       else
-        Lwt.return (`success(Linocaml.Base.Data_Internal__ (Obj.magic ()), Obj.magic ()))
+        Lwt.return (`success(Data (Obj.magic ()), Obj.magic ()))
 
     let _200 {in_cli} =
-      Lwt.return (`_200(Linocaml.Base.Data_Internal__ (Obj.magic ()), Obj.magic ()))
+      Lwt.return (`_200(Data (Obj.magic ()), Obj.magic ()))
   end
   module Senders = struct
-    let _200 {out_srv} (`_200(_, Linocaml.Base.Data_Internal__ _, _) : [`_200 of _]) =
+    let _200 {out_srv} (`_200(_, Data _, _) : [`_200 of _]) =
       Lwt.return ()
 
-    let _302 {out_srv} (`_302(_, Linocaml.Base.Data_Internal__ _, _) : [`_302 of _]) =
+    let _302 {out_srv} (`_302(_, Data _, _) : [`_302 of _]) =
       Lwt.return ()
 
-    let _tokens {out_cli} (`tokens(_, Linocaml.Base.Data_Internal__ _, _) : [`tokens of _]) =
+    let _tokens {out_cli} (`tokens(_, Data _, _) : [`tokens of _]) =
       Lwt.return ()
   end
 end
@@ -143,3 +146,8 @@ let oauth_provider acceptor =
      let%lin #s = disconnect s role_U in
      close s
   end
+
+let%lwt () =
+  let open Lwt in
+  let%lwt acceptor = http_acceptor ~port:8080 () in
+  run_ctx oauth_provider acceptor

@@ -7,6 +7,8 @@ PKG cohttp-lwt-unix
 PKG linocaml.lwt
 PKG linocaml.ppx
 PKG linocaml.ppx_lens
+PKG sexplib
+PKG lwt.ppx
 PKG ppx_deriving.runtime
 PKG ppx_implicits
 PKG ppx_implicits.runtime

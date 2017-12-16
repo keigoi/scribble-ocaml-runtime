@@ -16,10 +16,6 @@ module RawChan = Scribble.Unsafe.Make_raw_dchan(Scribble.Dchannel.Make(Chan))
 
 include Scribble.Session.Make
           (Linocaml_lwt)
-          (struct
-            type +'a io = 'a Lwt.t
-            let try_bind = Lwt.try_bind
-          end)
           (Chan)
           (RawChan)
 
@@ -59,11 +55,9 @@ module Tcp : Scribble.Base.TCP with module Endpoint = Endpoint and type stream =
         let sock_cli = socket PF_UNIX SOCK_STREAM 0 in
         connect sock_cli (ADDR_UNIX path) >>= fun () ->
         Lwt.return @@ make (sock_cli, sock_cli)),
-       {Endpoint.try_accept = (fun return ->
+       (fun () ->
          accept sock_listen >>= fun (sock_serv, _) ->
-         return @@ make (sock_serv, sock_serv) >>= function
-                              | Some c -> Lwt.return c
-                              | None -> failwith "session acceptance rejected")})
+         return @@ make (sock_serv, sock_serv)))
 end
 
 let shmem () =

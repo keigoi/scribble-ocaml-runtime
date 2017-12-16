@@ -1,8 +1,3 @@
-module type IO_EXN = sig
-  type +'a io
-  val try_bind : (unit -> 'a io) -> ('a -> 'b io) -> (exn -> 'b io) -> 'b io
-end
-
 module type CHAN = sig
   type +'a io
   type 'a t
@@ -36,7 +31,7 @@ module type ENDPOINT = sig
 
   type 'c conn = {handle: 'c; close: unit -> unit io}
   type 'c connector = unit -> 'c conn io
-  type 'c acceptor  = {try_accept:'a. ('c conn -> 'a option io) -> 'a io}
+  type 'c acceptor  = unit -> 'c conn io
 
   type t
 

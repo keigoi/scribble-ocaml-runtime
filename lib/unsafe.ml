@@ -29,15 +29,15 @@ let remove_role_part : Obj.t -> Obj.t = fun var ->
     var
 
 (* unsafe: fun (`tag(msg,_)) new_sess -> `tag(msg,new_sess) *)
-let replace_sess_part : Obj.t -> Obj.t -> Obj.t = fun var new_sess ->
-  let var = Obj.dup var in
+let replace_sess_part : 'a -> 'b -> 'a = fun var new_sess ->
+  let var = Obj.dup (Obj.repr var) in
   let old_payload = get_payload var in
   if Obj.size old_payload <> 2 then
     failwith (Printf.sprintf "replace_sess_part: unexpected tuple size: %d (expected: 2)" (Obj.size old_payload))
-  else 
+  else
     let (msg,_) = Obj.obj old_payload in
     let new_payload = Obj.repr (msg,new_sess) in
-    replace_payload var new_payload
+    Obj.obj (replace_payload var new_payload)
 
 module Make_raw_dchan(M:Base.DCHAN)
        : Base.RAW_DCHAN with type 'a io = 'a M.io

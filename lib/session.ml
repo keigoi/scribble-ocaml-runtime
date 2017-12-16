@@ -2,7 +2,6 @@ open Linocaml.Base
 open Linocaml.Lens
 
 module Make(LinIO:Linocaml.Base.LIN_IO)
-           (IOExn:Base.IO_EXN with type 'a io = 'a LinIO.IO.io)
            (Chan:Base.CHAN with type 'a io = 'a LinIO.IO.io)
            (RawChan:Base.RAW_DCHAN with type 'a io = 'a LinIO.IO.io)
 : Base.SESSION with type 'a io = 'a LinIO.IO.io and type ('p,'q,'a) monad = ('p,'q,'a) LinIO.monad and type shmem_chan = RawChan.t
@@ -108,35 +107,27 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
     let open IO in
     receiver c.E.handle >>= fun br ->
     (* we must replace 'p sess part, since the part in payload is Dummy (see send) *)
-    let br = Unsafe.replace_sess_part (Obj.repr br) (Obj.repr (Lin_Internal__ (EP s))) in
-    let br = Obj.obj br in
+    let br = Unsafe.replace_sess_part br (Lin_Internal__ (EP s)) in
     return br
 
   let real_accept s acceptor receiver =
     let open IO in
-    let rec loop () =
-      acceptor.E.try_accept (fun c ->
-          IOExn.try_bind (fun () -> real_receive s receiver c) (fun br -> return @@ Some (c, br)) (function
-              | AcceptAgain -> return None
-              | e -> raise e))
-    in loop ()
+    acceptor () >>= fun c ->
+    real_receive s receiver c >>= fun br ->
+    return (c, br)
 
   let real_accept_corr s acceptor receiver corr =
     let real_receive_corr s receiver c corr =
       let open IO in
       receiver (c.E.handle,corr) >>= fun br ->
       (* we must replace 'p sess part, since the part in payload is Dummy (see send) *)
-      let br = Unsafe.replace_sess_part (Obj.repr br) (Obj.repr (Lin_Internal__ (EP s))) in
-      let br = Obj.obj br in
+      let br = Unsafe.replace_sess_part br (Lin_Internal__ (EP s)) in
       return br
     in
     let open IO in
-    let rec loop () =
-      acceptor.E.try_accept (fun c ->
-          IOExn.try_bind (fun () -> real_receive_corr s receiver c corr) (fun br -> return @@ Some (c, br)) (function
-              | AcceptAgain -> return None
-              | e -> raise e))
-    in loop ()
+    acceptor () >>= fun c ->
+    real_receive_corr s receiver c corr >>= fun br ->
+    return (c, br)
 
   (** invariant: 'br must be [`tag of 'a * 'b sess] *)
   let receive
@@ -209,8 +200,7 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
         let receiver = Receiver.unpack @@ untrans _receiver in
         real_accept s acceptor receiver >>= fun (conn, br) ->
         E.attach s dir conn;
-        (* we must replace 'p sess part, since the part in payload is Dummy (see send) *)
-        print_endline (E.myname s ^ ": received");
+        print_endline (E.myname s ^ ": accepted");
         return (put pre Empty, Lin_Internal__ br)
       end
 

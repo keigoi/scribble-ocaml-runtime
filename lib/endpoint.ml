@@ -7,7 +7,7 @@ module Make(IO:Linocaml.Base.IO)
   type 'c conn = {handle: 'c; close: unit -> unit IO.io}
   type 'c conn_kind = ..
   type 'c connector = unit -> 'c conn IO.io
-  type 'c acceptor  = {try_accept:'a. ('c conn -> 'a option io) -> 'a IO.io}
+  type 'c acceptor  = unit -> 'c conn IO.io
 
   type pair = Pair : 'c conn_kind * 'c -> pair
   let unpack : 'c conn_kind -> pair -> 'c =
@@ -63,7 +63,7 @@ module Make(IO:Linocaml.Base.IO)
 
   let accept : t -> 'c key -> 'c acceptor -> unit IO.io = fun t (k,s) acpt ->
     let open IO in
-    acpt.try_accept (fun c -> IO.return (Some c)) >>= fun raw ->
+    acpt () >>= fun raw ->
     (Map.add t.role2conn (MapKey.Key(k,s)) raw; return ())
 
   let attach : t -> 'c key -> 'c conn -> unit = fun t (k,s) conn ->

@@ -27,3 +27,6 @@ setup.log
 # emacs
 \#*
 \.\#*
+
+# jbuilder creates/updates .merlin
+.merlin

@@ -137,6 +137,18 @@ module type SESSION = sig
     -> ('dir,'c) role
     -> ('pre, 'post, 'br lin) monad
 
+  (**
+   * accept_corr : accept with 'session correlation' [FASE17]
+   * invariant: 'br must be [`tag of 'a * 'b sess]
+   *)
+  val accept_corr :
+    ?_receiver:('c * 'corr, 'br) Receiver.t
+    -> ([`accept of ('dir,'c) role * 'br] sess, empty, 'pre, 'post) slot
+    -> 'c Endpoint.acceptor
+    -> ('dir,'c) role
+    -> 'corr
+    -> ('pre, 'post, 'br lin) monad
+
   val disconnect :
     ([ `disconnect of ('dir,'c) role * 'p sess] sess, empty, 'pre, 'post) slot
     -> ('dir,'c) role

@@ -121,6 +121,23 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
               | e -> raise e))
     in loop ()
 
+  let real_accept_corr s acceptor receiver corr =
+    let real_receive_corr s receiver c corr =
+      let open IO in
+      receiver (c.E.handle,corr) >>= fun br ->
+      (* we must replace 'p sess part, since the part in payload is Dummy (see send) *)
+      let br = Unsafe.replace_sess_part (Obj.repr br) (Obj.repr (Lin_Internal__ (EP s))) in
+      let br = Obj.obj br in
+      return br
+    in
+    let open IO in
+    let rec loop () =
+      acceptor.E.try_accept (fun c ->
+          IOExn.try_bind (fun () -> real_receive_corr s receiver c corr) (fun br -> return @@ Some (c, br)) (function
+              | AcceptAgain -> return None
+              | e -> raise e))
+    in loop ()
+
   (** invariant: 'br must be [`tag of 'a * 'b sess] *)
   let receive
       :  type br dir c p pre xx post v.
@@ -191,6 +208,29 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
         let open IO in
         let receiver = Receiver.unpack @@ untrans _receiver in
         real_accept s acceptor receiver >>= fun (conn, br) ->
+        E.attach s dir conn;
+        (* we must replace 'p sess part, since the part in payload is Dummy (see send) *)
+        print_endline (E.myname s ^ ": received");
+        return (put pre Empty, Lin_Internal__ br)
+      end
+
+  (** invariant: 'br must be [`tag of 'a * 'b sess] *)
+  let accept_corr
+      :  type br dir c corr p pre xx post v.
+              ?_receiver:(c * corr,br) Receiver.t
+              -> ([`accept of (dir,c) role * br] sess, empty, pre, post) slot
+              -> c E.acceptor
+              -> (dir,c) role
+              -> corr
+              -> (pre, post, br lin) LinIO.monad =
+    fun ?_receiver {get;put} acceptor dir corr ->
+    LinIO.Internal.__monad begin
+        fun pre ->
+        let s = unsess (get pre) in
+        print_endline (E.myname s ^ ": accept from " ^ E.string_of_key dir);
+        let open IO in
+        let receiver = Receiver.unpack @@ untrans _receiver in
+        real_accept_corr s acceptor receiver corr >>= fun (conn, br) ->
         E.attach s dir conn;
         (* we must replace 'p sess part, since the part in payload is Dummy (see send) *)
         print_endline (E.myname s ^ ": received");

@@ -81,8 +81,9 @@ let listen ?(backlog=128) sa =
 
 let http_acceptor ?(host="0.0.0.0") ~port () : cohttp_server Endpoint.acceptor Lwt.t =
   let open Lwt in
-  listen (Unix.ADDR_INET(Unix.inet_addr_of_string host, port)) >>= fun lfd ->
-  let process_callers_body waitors(* queue of stream push funcs *) conn =
+  (** (process_waitors_body waitors conn) applies new connection conn to the waitors in order.
+   *  if it finds a matching waitor (one returning true), then it removes the waitor from the queue *)
+  let process_waitors_body waitors conn =
     let rest_waitors = Queue.create () in
     let rec loop () =
       if Queue.is_empty waitors then
@@ -108,34 +109,40 @@ let http_acceptor ?(host="0.0.0.0") ~port () : cohttp_server Endpoint.acceptor L
   let process_waitors conn =
     Lwt_mvar.take waitors >>= fun wq ->
     Lwt_mvar.put waitors (Queue.create ()) >>= fun _ ->
-    process_callers_body wq conn >>= fun (b, wq_rest) ->
+    process_waitors_body wq conn >>= fun (b, wq_rest) ->
     Lwt_mvar.take waitors >>= fun new_wq ->
     Queue.transfer new_wq wq_rest;
     Lwt_mvar.put waitors wq_rest >>= fun _ ->
     return b
   in
-  let rec loop () =
-    print_endline "accept!!";
-    Lwt_unix.accept lfd >>= fun (fd, peer_addr) ->
-    Lwt_unix.setsockopt fd Lwt_unix.TCP_NODELAY true;
-    print_endline "accepted!!";
-    let conn = {Endpoint.handle=
-                  {in_srv=request_stream @@ Lwt_io.of_fd Lwt_io.input fd;
-                   out_srv=response (Lwt_io.of_fd Lwt_io.output fd)};
-                close=(fun () -> Lwt_unix.close fd)}
+  begin
+    listen (Unix.ADDR_INET(Unix.inet_addr_of_string host, port)) >>= fun lfd ->
+    let rec loop () =
+      print_endline "accept!!";
+      Lwt_unix.accept lfd >>= fun (fd, peer_addr) ->
+      Lwt_unix.setsockopt fd Lwt_unix.TCP_NODELAY true;
+      print_endline "accepted!!";
+      let conn = {Endpoint.handle=
+                    {in_srv=request_stream @@ Lwt_io.of_fd Lwt_io.input fd;
+                     out_srv=response (Lwt_io.of_fd Lwt_io.output fd)};
+                  close=(fun () -> Lwt_unix.close fd)}
+      in
+      process_waitors conn >>= fun b ->
+      if not b then ignore @@ begin
+          print_endline "no handler";
+          conn.Endpoint.handle.out_srv @@ (Cohttp.Response.make (), "") >>= fun _ ->
+          conn.Endpoint.close ()
+        end;
+      loop ()
     in
-    process_waitors conn >>= fun b ->
-    if not b then ignore @@ begin
-        print_endline "no handler";
-        conn.Endpoint.handle.out_srv @@ (Cohttp.Response.make (), "") >>= fun _ ->
-        conn.Endpoint.close ()
-      end;
-    loop ()
-  in
-  Lwt.async loop;
+    Lwt.async loop;
+    return ()
+  end >>= fun _ ->
   let make_conn_stream () =
     let st, push_st = Lwt_stream.create () in
-    Lwt_mvar.take waitors >>= fun wq -> Queue.push push_st wq; Lwt_mvar.put waitors wq >>= fun () ->
+    Lwt_mvar.take waitors >>= fun wq ->
+    Queue.push push_st wq;
+    Lwt_mvar.put waitors wq >>= fun () ->
     return st
   in
   Lwt.return @@
@@ -169,15 +176,28 @@ module HttpParsersAndPrinters = struct
          Lwt.return (`oauth(Data (), dummy))
       | _ -> raise AcceptAgain
 
-    let _login_fail_or_success {in_srv} =
-      Lwt_stream.get in_srv >>= function
-      | (Some({Request.resource="/login_fail"} as req,_)) ->
+    let _login_fail_or_success ({in_srv}, cookie) =
+      Lwt_stream.get in_srv >>= fun reqs ->
+      let req =
+        begin match reqs with
+      | Some(req,_) -> req
+      | None -> raise AcceptAgain
+        end
+      in
+      let fromjust = function None -> "" | Some s -> s in
+      print_endline (Sexplib.Sexp.to_string @@ Cohttp.Request.sexp_of_t req);
+      print_endline ((req |> Request.resource |> Uri.of_string |> Uri.get_query_param) "cookie" |> fromjust);
+      print_endline cookie;
+      if not ((req |> Request.resource |> Uri.of_string |> Uri.get_query_param) "cookie" = Some cookie) then begin
+          print_endline "neq";
+          raise AcceptAgain;
+        end;
+      match req |> Request.resource |> Uri.of_string |> Uri.path  with
+      | "/login_fail" ->
          print_endline "login_fail";
-         print_endline (Sexplib.Sexp.to_string @@ Cohttp.Request.sexp_of_t req);
          Lwt.return @@ `login_fail(Data (Obj.magic ()), dummy)
-      | (Some({Request.resource="/success"} as req,_)) ->
+      | "/success" ->
          print_endline "success";
-         print_endline (Sexplib.Sexp.to_string @@ Cohttp.Request.sexp_of_t req);
          Lwt.return @@ `success(Data (Obj.magic ()), dummy)
       | _ -> raise AcceptAgain
 
@@ -205,9 +225,10 @@ let oauth_provider acceptor =
   let role_A = mk_role_A CohttpClient in
   let%lin #s = initiate_C () in
   let%lin `oauth(_,#s) = accept s acceptor role_U in
+  let cookie = "123abc" in
   let%lin #s = send s role_U msg_302 ("https://api.twitter.com/oauth/authenticate?oauth_token=","") in
   let%lin #s = disconnect s role_U in
-  begin match%lin accept s acceptor role_U with
+  begin match%lin accept_corr s acceptor role_U cookie with
   | `login_fail(_, #s) ->
      let%lin #s = send s role_U msg_200 () in
      close s

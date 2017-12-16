@@ -4,4 +4,4 @@
  ((name oauth_server)
   (preprocess (pps (linocaml.ppx linocaml.ppx_lens lwt.ppx)))
   (flags ("-short-paths" "-ppx" "`ocamlfind query ppx_implicits`/ppx_implicits"))
-  (libraries (scribble.lwt linocaml.lwt cohttp-lwt-unix uri sexplib cmdliner))))
+  (libraries (scribble.lwt linocaml.lwt conduit-lwt-unix cohttp-lwt-unix uri sexplib cmdliner))))

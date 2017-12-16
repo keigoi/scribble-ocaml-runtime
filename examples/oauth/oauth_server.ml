@@ -8,159 +8,124 @@ type 'a ctx = <s : 'a>
 
 open OAuth
 
-type cohttp_request_stream = (Cohttp.Request.t * string) Lwt_stream.t
-type cohttp_response_stream = (Cohttp.Response.t * string) Lwt_stream.t
-
-type cohttp_server = {in_srv:cohttp_request_stream; out_srv: Cohttp.Response.t * string -> unit Lwt.t}
-type cohttp_client = {in_cli:cohttp_response_stream; out_cli:Lwt_io.output_channel}
+type cohttp_server = {in_srv: ?pred:(Cohttp.Request.t -> bool) -> string list -> (Cohttp.Request.t * Cohttp_lwt.Body.t) Lwt.t;
+                      out_srv: Cohttp.Response.t -> string -> unit Lwt.t}
+type cohttp_client = {in_cli: Cohttp.Response.t * string Lwt.t;
+                      out_cli: Cohttp.Request.t -> string -> unit Lwt.t}
 
 type _ Endpoint.conn_kind +=
        CohttpServer : cohttp_server Endpoint.conn_kind
-   |   CohttpClient : cohttp_client Endpoint.conn_kind
+ |   CohttpClient : cohttp_client Endpoint.conn_kind
 
-(* from https://github.com/mirage/ocaml-cohttp/blob/v1.0.0/cohttp-lwt/src/server.ml#L73-L110
- * Copyright (c) 2012 Anil Madhavapeddy <anil@recoil.org>
- *)
-let request_stream (ic : Lwt_io.input_channel) : cohttp_request_stream =
-  let open Cohttp_lwt_unix in
-  let open Lwt in
-  (* don't try to read more from ic until the previous request has
-       been fully read an released this mutex *)
-  let read_m = Lwt_mutex.create () in
-  (* If the request is HTTP version 1.0 then the request stream should be
-       considered closed after the first request/response. *)
-  let early_close = ref false in
-  Lwt_stream.from begin fun () ->
-    if !early_close
-    then Lwt.return_none
-    else
-      Lwt_mutex.lock read_m >>= fun () ->
-      Request.read ic >>= function
-      | `Eof | `Invalid _ -> (* TODO: request logger for invalid req *)
-         Lwt_mutex.unlock read_m;
-         Lwt.return_none
-      | `Ok req -> begin
-          early_close := not (Request.is_keep_alive req);
-          (* Ensure the input body has been fully read before reading
-               again *)
-          match Request.has_body req with
-          | `Yes ->
-             let reader = Request.make_body_reader req ic in
-             let body_stream = Cohttp_lwt.Body.create_stream
-                                 Request.read_body_chunk reader in
-             Lwt_stream.on_terminate body_stream
-               (fun () -> Lwt_mutex.unlock read_m);
-             Cohttp_lwt.Body.to_string @@ Cohttp_lwt.Body.of_stream body_stream >>= fun body ->
-             Lwt.return (Some (req, body))
-          (* TODO for now we are just repeating the old behaviour
-           * of ignoring the body in the request. Perhaps it should be
-           * changed it did for responses *)
-          | `No | `Unknown ->
-             Lwt_mutex.unlock read_m;
-             Lwt.return (Some (req, ""))
+let start_server host port callback () =
+  let open Lwt.Infix in
+  let config = Cohttp_lwt_unix.Server.make ~callback () in
+  Conduit_lwt_unix.init ~src:host () >>= fun ctx ->
+  let ctx = Cohttp_lwt_unix.Net.init ~ctx () in
+  Cohttp_lwt_unix.Server.create ~ctx ~mode:(`TCP (`Port port)) config
+
+let in_mvar mvar f =
+  let open Lwt.Infix in
+  Lwt_mvar.take mvar >>= fun content ->
+  Lwt.finalize (fun () ->
+      f content) (fun () ->
+      Lwt_mvar.put mvar content)
+
+module ActionTable : sig
+  type 'a t
+  val create : unit -> 'a t
+  val wait : 'a t -> pred:(Cohttp.Request.t -> bool) -> paths:string list -> 'a Lwt.t
+  val dispatch : 'a t -> Cohttp.Request.t -> 'a -> unit Lwt.t
+end = struct
+  open Lwt
+  type pred = Cohttp.Request.t -> bool
+  type 'a t = (string, (pred * 'a Lwt.u) list) Hashtbl.t Lwt_mvar.t
+
+  let create () = Lwt_mvar.create (Hashtbl.create 42)
+  let wait tbl ~pred ~paths =
+    in_mvar tbl begin fun hash ->
+      let wait, wake = Lwt.wait () in
+      let put path =
+        print_endline @@ "put:" ^ path;
+        begin match Hashtbl.find_opt hash path with
+        | Some xs -> Hashtbl.replace hash path ((pred, wake)::xs)
+        | None -> Hashtbl.add hash path [(pred,wake)]
         end
-    end
-
-let response oc (resp,body) =
-  let open Lwt in
-  let flush = Cohttp.Response.flush resp in
-  Cohttp_lwt_unix.Response.write ~flush (fun writer ->
-      Cohttp_lwt.Body.write_body (Cohttp_lwt_unix.Response.write_body writer) (Cohttp_lwt.Body.of_string body)
-    ) resp oc >>= fun _ ->
-  Lwt_io.flush oc
-
-let listen ?(backlog=128) sa =
-  let open Lwt in
-  let fd = Lwt_unix.socket (Unix.domain_of_sockaddr sa) Unix.SOCK_STREAM 0 in
-  Lwt_unix.(setsockopt fd SO_REUSEADDR true);
-  Lwt_unix.bind fd sa >|= fun () ->
-  Lwt_unix.listen fd backlog;
-  Lwt_unix.set_close_on_exec fd;
-  fd
-
+      in
+      List.iter put paths;
+      return wait
+      end >>= fun wait ->
+    wait
+  let dispatch tbl req a =
+    let path : string = req |> Cohttp.Request.resource |> Uri.of_string |> Uri.path in
+    print_endline @@ "dispatch:"^ path;
+    in_mvar tbl begin fun hash ->
+      let w =
+        match Hashtbl.find_opt hash path with
+        | Some xs ->
+           let rec loop acc = function
+             | (f,w)::xs -> if f req
+                            then (w, acc @ xs)
+                            else loop ((f,w)::acc) xs
+             | [] ->
+                print_endline"path found but no action";
+                failwith "path found but no action"
+           in
+           let w, xs = loop [] xs in
+           Hashtbl.replace hash path xs;
+           w
+        | _ ->
+           print_endline"path not found";
+           failwith "no action"
+      in
+      return w
+      end >>= fun w ->
+    print_endline "found";
+    Lwt.wakeup w a;
+    print_endline "dispatch done";
+    return ()
+end
 
 let http_acceptor ?(host="0.0.0.0") ~port () : cohttp_server Endpoint.acceptor Lwt.t =
   let open Lwt in
-  (** (process_waitors_body waitors conn) applies new connection conn to the waitors in order.
-   *  if it finds a matching waitor (one returning true), then it removes the waitor from the queue *)
-  let process_waitors_body waitors conn =
-    let rest_waitors = Queue.create () in
-    let rec loop () =
-      if Queue.is_empty waitors then
-        return false
-      else begin
-          let push_stream_func = Queue.pop waitors in
-          let wait, wake = Lwt.wait () in
-          push_stream_func (Some (conn, wake));
-          wait >>= fun b ->
-          if b then begin
-              Queue.transfer waitors rest_waitors;
-              return true
-            end else begin
-              Queue.push push_stream_func rest_waitors;
-              loop ()
-            end
-        end
+  let table = ActionTable.create () in
+  let callback conn req body =
+    print_endline "callback start";
+    let wait, wake = Lwt.wait () in
+    let outf resp body = Lwt.wakeup wake (resp, body)
+    and clsf () = ()
     in
-    loop () >>= fun b ->
-    return (b, rest_waitors)
+    print_endline "dispatch";
+    ActionTable.dispatch table req ((req,body), outf, clsf) >>= fun () ->
+    print_endline "dispatched";
+    wait
   in
-  let waitors = Lwt_mvar.create (Queue.create ()) in
-  let process_waitors conn =
-    Lwt_mvar.take waitors >>= fun wq ->
-    Lwt_mvar.put waitors (Queue.create ()) >>= fun _ ->
-    process_waitors_body wq conn >>= fun (b, wq_rest) ->
-    Lwt_mvar.take waitors >>= fun new_wq ->
-    Queue.transfer new_wq wq_rest;
-    Lwt_mvar.put waitors wq_rest >>= fun _ ->
-    return b
-  in
-  begin
-    listen (Unix.ADDR_INET(Unix.inet_addr_of_string host, port)) >>= fun lfd ->
-    let rec loop () =
-      print_endline "accept!!";
-      Lwt_unix.accept lfd >>= fun (fd, peer_addr) ->
-      Lwt_unix.setsockopt fd Lwt_unix.TCP_NODELAY true;
-      print_endline "accepted!!";
-      let conn = {Endpoint.handle=
-                    {in_srv=request_stream @@ Lwt_io.of_fd Lwt_io.input fd;
-                     out_srv=response (Lwt_io.of_fd Lwt_io.output fd)};
-                  close=(fun () -> Lwt_unix.close fd)}
-      in
-      process_waitors conn >>= fun b ->
-      if not b then ignore @@ begin
-          print_endline "no handler";
-          conn.Endpoint.handle.out_srv @@ (Cohttp.Response.make (), "") >>= fun _ ->
-          conn.Endpoint.close ()
-        end;
-      loop ()
-    in
-    Lwt.async loop;
-    return ()
-  end >>= fun _ ->
-  let make_conn_stream () =
-    let st, push_st = Lwt_stream.create () in
-    Lwt_mvar.take waitors >>= fun wq ->
-    Queue.push push_st wq;
-    Lwt_mvar.put waitors wq >>= fun () ->
-    return st
+  Lwt.async (start_server host port callback);
+  let wait_for_client ?(pred=fun _->true) ~paths =
+    print_endline @@ "wait for" ^ List.hd paths;
+    ActionTable.wait table ~pred ~paths
   in
   Lwt.return @@
-    {Endpoint.try_accept=(fun predicate ->
-       make_conn_stream () >>= fun conn_stream ->
-       print_endline "Acceptor made";
-       let rec loop () =
-         Lwt_stream.get conn_stream >>= function None -> assert false | Some (conn, ret) ->
-         predicate conn >>= function
-         | Some c -> Lwt.wakeup ret true; return c
-         | None ->
-            Lwt.wakeup ret false;
-            loop ()
-       in loop ())}
+    (fun () ->
+      print_endline "accept!";
+      let wait1, wake1 = Lwt.wait () in
+      let wait2, wake2 = Lwt.wait () in
+      return
+        {Endpoint.handle={
+           in_srv=(fun ?pred paths ->
+             print_endline "wait for client";
+             wait_for_client ?pred ~paths >>= fun (in_,outf,clsf) ->
+             print_endline "woken up";
+             Lwt.wakeup wake1 outf;
+             Lwt.wakeup wake2 clsf;
+             return in_);
+           out_srv=(fun head body -> if Lwt.state wait1 = Sleep then failwith "write: no request" else wait1 >>= fun f -> Lwt.return (f head (`String(body))))};
+         close=(fun () -> if Lwt.state wait2 = Sleep then failwith "close: no request" else wait2 >>= fun f -> Lwt.return (f ()))}
+    )
 
 (* TODO *)
 let http_connector ~(host : string) () : cohttp_client Endpoint.connector =
-  Obj.magic ()
+  failwith "http_connector unimplemented"
 
 
 (* TODO *)
@@ -170,48 +135,38 @@ module HttpParsersAndPrinters = struct
     open Cohttp_lwt_unix
 
     let _oauth {in_srv} =
-      Lwt_stream.get in_srv >>= function
-      | (Some({Request.resource="/oauth"} as req,_)) ->
-         print_endline (Sexplib.Sexp.to_string @@ Cohttp.Request.sexp_of_t req);
-         Lwt.return (`oauth(Data (), dummy))
-      | _ -> raise AcceptAgain
+      print_endline "waiting /oauth";
+      in_srv ["/oauth"] >>= fun (req,body) ->
+      Request.sexp_of_t req |> Sexplib.Sexp.to_string |> print_endline;
+      Lwt.return (`oauth(Data (), dummy))
 
     let _login_fail_or_success ({in_srv}, cookie) =
-      Lwt_stream.get in_srv >>= fun reqs ->
-      let req =
-        begin match reqs with
-      | Some(req,_) -> req
-      | None -> raise AcceptAgain
-        end
-      in
-      let fromjust = function None -> "" | Some s -> s in
-      print_endline (Sexplib.Sexp.to_string @@ Cohttp.Request.sexp_of_t req);
-      print_endline ((req |> Request.resource |> Uri.of_string |> Uri.get_query_param) "cookie" |> fromjust);
-      print_endline cookie;
-      if not ((req |> Request.resource |> Uri.of_string |> Uri.get_query_param) "cookie" = Some cookie) then begin
-          print_endline "neq";
-          raise AcceptAgain;
-        end;
+      print_endline "before login_fail_or_success";
+      in_srv ~pred:(fun _ -> true)
+        ["/login_fail"; "/success"] >>= fun (req, body)  ->
+      print_endline "login_fail_or_success";
       match req |> Request.resource |> Uri.of_string |> Uri.path  with
       | "/login_fail" ->
          print_endline "login_fail";
-         Lwt.return @@ `login_fail(Data (Obj.magic ()), dummy)
+         Lwt.return @@ `login_fail(Data "", dummy)
       | "/success" ->
          print_endline "success";
-         Lwt.return @@ `success(Data (Obj.magic ()), dummy)
+         Lwt.return @@ `success(Data ("", ""), dummy)
       | _ -> raise AcceptAgain
 
     let _200 {in_cli} =
-      Lwt.return (`_200(Data (Obj.magic ()), Obj.magic ()))
+      failwith "receive 200: not implemented"
+      (* Lwt.return (`_200(Data (Obj.magic ()), Obj.magic ())) *)
   end
   module Senders = struct
     let _200 {out_srv} (`_200(_, Data _, _) : [`_200 of _]) =
-      out_srv @@ (Cohttp.Response.make (), "hello world")
+      out_srv (Cohttp.Response.make ()) "hello world"
 
     let _302 {out_srv} (`_302(_, Data (url, backurl), _) : [`_302 of _]) =
-      out_srv @@ (Cohttp.Response.make
+      print_endline "302";
+      out_srv (Cohttp.Response.make
                     ~status:(`Found)
-                    ~headers:(Cohttp.Header.init_with "Location" url) (), "")
+                    ~headers:(Cohttp.Header.init_with "Location" url) ()) ""
 
     let _tokens {out_cli} (`tokens(_, Data _, _) : [`tokens of _]) =
       Lwt.return ()
@@ -221,8 +176,10 @@ end
 open HttpParsersAndPrinters
 
 let oauth_provider acceptor =
+  let open Linocaml_lwt in
   let role_U = mk_role_U CohttpServer in
   let role_A = mk_role_A CohttpClient in
+  (* let%lin #s = Scribble_lwt.Internal.__initiate ~myname:"role_C" in *)
   let%lin #s = initiate_C () in
   let%lin `oauth(_,#s) = accept s acceptor role_U in
   let cookie = "123abc" in
@@ -234,7 +191,7 @@ let oauth_provider acceptor =
      close s
   | `success(_, #s) ->
      let connector = http_connector ~host:"" () in (* TODO *)
-     let%lin #s = connect s connector role_A msg_tokens (Obj.magic ()) in (* TODO *)
+     let%lin #s = connect s connector role_A msg_tokens "" in (* TODO *)
      let%lin `_200(_,#s) = receive s role_A in
      let%lin #s = disconnect s role_A in
      let%lin #s = send s role_U msg_200 () in
@@ -242,7 +199,10 @@ let oauth_provider acceptor =
      close s
   end
 
-let%lwt () =
-  let open Lwt in
-  let%lwt acceptor = http_acceptor ~port:8080 () in
-  run_ctx oauth_provider acceptor
+let () =
+  Lwt_main.run
+    begin
+      let open Lwt in
+      http_acceptor ~port:8080 () >>= fun acceptor ->
+      run_ctx oauth_provider acceptor
+    end

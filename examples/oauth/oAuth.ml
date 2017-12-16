@@ -4,7 +4,7 @@
 open Scribble_lwt
 type oAuth
 
-type uRL = string and form and scope and id and pass and code and accessToken
+type uRL = string and form and scope and id and pass and code = string and accessToken
 
 type ('c_C, 'c_A) oAuth_U = ('c_C, 'c_A) oAuth_U_1
 and ('c_C, 'c_A) oAuth_U_1 =

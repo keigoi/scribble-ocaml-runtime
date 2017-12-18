@@ -124,6 +124,21 @@ module type SESSION = sig
     -> 'v
     -> ('pre, 'post, 'p sess) monad
 
+  (**
+   * connect_corr : connect with 'session correlation' [FASE17]
+   * invariant: 'br must be [`tag of 'a * 'b sess]
+   *)
+  val connect_corr :
+    ?_sender:('c * 'corr,'br) Sender.t
+    -> ([ `send of 'br ] sess, empty, 'pre, 'post) slot
+    -> 'c Endpoint.connector
+    -> 'corr
+    -> ('dir,'c) role
+    -> ('br, ('dir,'c) role connect * 'v data * 'p sess) lab
+    -> 'v
+    -> ('pre, 'post, 'p sess) monad
+
+
   (** invariant: 'br must be [`tag of 'a * 'b sess] *)
   val accept :
     ?_receiver:('c, 'br) Receiver.t
@@ -140,8 +155,8 @@ module type SESSION = sig
     ?_receiver:('c * 'corr, 'br) Receiver.t
     -> ([`accept of ('dir,'c) role * 'br] sess, empty, 'pre, 'post) slot
     -> 'c Endpoint.acceptor
-    -> ('dir,'c) role
     -> 'corr
+    -> ('dir,'c) role
     -> ('pre, 'post, 'br lin) monad
 
   val disconnect :

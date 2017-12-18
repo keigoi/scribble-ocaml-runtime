@@ -183,6 +183,29 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
         return (put pre Empty, Lin_Internal__ (EP s))
       end
 
+  let connect_corr
+      : type br dir c corr v p q pre post.
+             ?_sender:(c * corr,br) Sender.t
+             -> ([`send of br] sess, empty, pre, post) slot
+             -> c Endpoint.connector
+             -> corr
+             -> (dir,c) role
+             -> (br, (dir,c) role connect * v data * p sess) lab
+             -> v
+             -> (pre, post, p sess) LinIO.monad
+    = fun ?_sender {get;put} connector corr dir {_pack} v ->
+    LinIO.Internal.__monad begin
+        fun pre ->
+        let s = unsess (get pre) in
+        let sender = Sender.unpack @@ untrans _sender in
+        print_endline (E.myname s ^ ": connect to " ^ E.string_of_key dir);
+        let open IO in
+        connector () >>= fun conn ->
+        E.attach s dir conn;
+        sender (conn.E.handle, corr) (_pack (dir,Data v,Lin_Internal__ Dummy)) >>= fun () ->
+        return (put pre Empty, Lin_Internal__ (EP s))
+      end
+
   (** invariant: 'br must be [`tag of 'a * 'b sess] *)
   let accept
       :  type br dir c p pre xx post v.
@@ -210,10 +233,10 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
               ?_receiver:(c * corr,br) Receiver.t
               -> ([`accept of (dir,c) role * br] sess, empty, pre, post) slot
               -> c E.acceptor
-              -> (dir,c) role
               -> corr
+              -> (dir,c) role
               -> (pre, post, br lin) LinIO.monad =
-    fun ?_receiver {get;put} acceptor dir corr ->
+    fun ?_receiver {get;put} acceptor corr dir ->
     LinIO.Internal.__monad begin
         fun pre ->
         let s = unsess (get pre) in

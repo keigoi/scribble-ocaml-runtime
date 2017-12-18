@@ -113,9 +113,9 @@ let oauth_consumer (module M:OAuthParserPrinterParams) acceptor connector () =
 
   | `callback_success(code, #s) ->
      let%lin #s = connect_corr s connector code role_P msg_access_token () in
-     let%lin `_200(_,#s) = receive s role_P in
+     let%lin `_200(accessToken,#s) = receive s role_P in
      let%lin #s = disconnect s role_P in
-     let%lin #s = send s role_U msg_200 "Success" in
+     let%lin #s = send s role_U msg_200 ("OAuth successful. Accsss Token response:" ^ accessToken) in
      let%lin #s = disconnect s role_U in
      close s
   end

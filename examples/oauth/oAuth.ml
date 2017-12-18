@@ -1,10 +1,24 @@
 (* Generated from scribble-ocaml https://github.com/keigoi/scribble-ocaml
  * This code should be compiled with scribble-ocaml-runtime
  * https://github.com/keigoi/scribble-ocaml-runtime *)
-open Scribble_lwt (* or: open Scribble_lwt *)
+open Scribble
+
 type oAuth
 
-type id = string and pass = string and state = string and code = string*string and accessToken = string and page = string
+module type TYPES = sig
+  type page
+end
+
+module Make(Session:Scribble.Base.SESSION)(Types:TYPES) = struct
+
+  type id = string
+  and pass = string
+  and state = string
+  and code = string
+  and accessToken = string
+  and page = Types.page
+
+  open Session
 
 type ('c_C, 'c_P) oAuth_U = ('c_C, 'c_P) oAuth_U_1
 and ('c_C, 'c_P) oAuth_U_1 =
@@ -100,3 +114,4 @@ let msg_callback_fail = {_pack=(fun a -> `callback_fail(a))}
 let msg_callback_success = {_pack=(fun a -> `callback_success(a))}
 let msg_oauth = {_pack=(fun a -> `oauth(a))}
 let msg_submit = {_pack=(fun a -> `submit(a))}
+end

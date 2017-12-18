@@ -1,16 +1,19 @@
 module OAuth;
-type <java> "java.lang.String" from "rt.jar" as Id;
-type <java> "java.lang.String" from "rt.jar" as Pass;
-type <java> "java.lang.String" from "rt.jar" as State;
-type <java> "java.lang.String" from "rt.jar" as Code;
-type <java> "java.lang.String" from "rt.jar" as AccessToken;
-type <java> "java.lang.String" from "rt.jar" as Page;
+type <ocaml> "Pervasives.string" from "stdlib" as Id;
+type <ocaml> "Pervasives.string" from "stdlib" as Pass;
+type <ocaml> "Pervasives.string" from "stdlib" as State;
+type <ocaml> "Pervasives.string" from "stdlib" as AccessToken;
+type <ocaml> "Pervasives.string" from "stdlib" as Code;
+type <ocaml> "page" from "__functor_parameter__" as Page;
 
-explicit global protocol OAuth(role U, role C, role P)
+explicit global protocol OAuth2Web(role U /* User */, role C /* Consumer */, role P /* Provider */)
 {
-        // Starts OAuth. Consumer redirects User to OAuth Provider (HTTP response code 302)
+        // Starts OAuth.
+
         oauth() connect U to C;
-        302_oauth_start(/*state:*/State) from C to U; /* @"open=C" */ // remember the Client URL to go back in future at (1)
+	// Consumer redirects User to Provider (HTTP response code 302)
+	// remember Consumer's State for later use at (1)
+        302_oauth_start(/*state:*/State) from C to U; /* @"open=C" */
         disconnect U and C;
 
         // After redirection, User gets a login form.
@@ -23,18 +26,17 @@ explicit global protocol OAuth(role U, role C, role P)
 
         choice at P {
                 // login successes.
-                // Auth server sends back a 'code'
-                // which is later exchanged for AccessToken at (2),
-                // and redirects User back to client
 
-                302_success(/*accessCode:*/Code) from P to U; /* @"open=P" */
+                // Auth server sends back a 'code'
+                // which is later exchanged for AccessToken at (2)
+                302_success(/*code:*/Code) from P to U; /* @"open=P" */
                 disconnect U and P;
 
                 // User sends the code to Client at redir URL
                 callback_success(Code) connect U to C; /* @"port=state" */ // -- (1)
 
                 // then Client gets AcceessToken from Provider
-                access_token() connect C to P; /* @"port=accessCode" */ // -- (2)
+                access_token() connect C to P; /* @"port=code" */ // -- (2)
                 200(AccessToken) from P to C;
                 disconnect C and P;
 
@@ -42,6 +44,7 @@ explicit global protocol OAuth(role U, role C, role P)
                 disconnect C and U;
         } or {
                 // login fails.
+
                 302_fail() from P to U;
                 disconnect U and P;
 
@@ -49,105 +52,3 @@ explicit global protocol OAuth(role U, role C, role P)
                 200(Page) from C to U;
         }
 }
-
-// Junk
-/*
-explicit global protocol OAuth_(role U, role C, role A)
-{
-        connect U to C;
-        oauth() from U to C;
-        302(redir:URL) from C to U; @"open=U"
-        disconnect U and C;
-
-        connect U to A;
-        authorize(redir) from U to A;
-        200(Form) from A to U;
-        disconnect A and U;
-
-        connect U to A;
-        login(Id,Pass) from U to A;
-        302(redir,Code) from A to U;
-        disconnect A and U;
-
-        connect U to C; @"port=p"
-        get(redir,Code) from U to C;
-
-        connect C to A;
-        tokens(Code) C to A;
-        200(AccToken,RefToken) A to C;
-        disconnect C and A;
-
-        200() from C to U;
-        disconnect U and C;
-}
-
-explicit global protocol OAuth_(role R, role B, role C, role S)
-{
-        connect R to C;
-
-        init() from R to C;
-        200(ClientId) from C to R;
-        open(URL) from R to B;
-
-        connect B to S;
-        get(URL) from B to S;
-        200(Form) from S to B;
-        postAuth(Id,Pass) from B to S;
-        302(URL,AuthCode) from S to B;
-        disconnect B and S;
-
-        open(URL,AuthCode) from B to C;
-        200() from C to B;
-
-        success(URL,AuthCode) from B to R;
-
-        choice at R {
-           api1(AuthCode) from R to C;
-           api1(AuthCode) from C to S;
-           200(API1Res) from S to C;
-           200(API1Res) from C to R;
-        } or {
-           api2(AuthCode,Param) from R to C;
-           api2(AuthCode) from C to S;
-           200(API2Res) from S to C;
-           200(Api2Res) from C to R;
-        }
-}
-
-explicit global protocol OAuth(role B, role C, role S)
-{
-        (AuthURL) from C to B;
-
-        get(URL) from B to S;
-        200(Form) from S to B;
-        postAuth(Id,Pass) from B to S;
-        200(AuthCode) from S to B;
-
-        success(AuthCode) from B to C;
-
-        choice at R {
-           api1(AuthCode) from C to S;
-           200(API1Res) from S to C;
-        } or {
-           api2(AuthCode) from C to S;
-           200(API2Res) from S to C;
-        }
-}
-
-explicit global protocol OAuth(role U, role C, role S)
-{
-        print(AuthURL) from C to U;
-        read_line(PIN) from U to C;
-
-        fetch_access_token(PIN) from C to S;
-        ok(AccessToken) from S to C;
-
-        choice at C {
-           api1(AuthCode) from C to S;
-           200(API1Res) from S to C;
-        } or {
-           api2(AuthCode) from C to S;
-           200(API2Res) from S to C;
-        }
-}
-*/

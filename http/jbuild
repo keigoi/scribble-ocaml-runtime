@@ -1,0 +1,6 @@
+(jbuild_version 1)
+
+(library
+ ((name scribble_http_lwt)
+  (public_name scribble.http.lwt)
+  (libraries (scribble.lwt linocaml.lwt conduit-lwt-unix cohttp-lwt-unix uri sexplib))))

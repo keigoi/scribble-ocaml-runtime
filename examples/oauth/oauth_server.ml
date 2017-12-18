@@ -2,20 +2,18 @@
 open Scribble_lwt
 open Linocaml_lwt
 
-type 'a ctx = <s : 'a>
-[@@deriving lens]
-[@@runner]
-
-open OAuth
-
-type cohttp_server = {in_srv: ?pred:(Cohttp.Request.t -> bool) -> string list -> (Cohttp.Request.t * Cohttp_lwt.Body.t) Lwt.t;
-                      out_srv: Cohttp.Response.t -> string -> unit Lwt.t}
-type cohttp_client = {in_cli: Cohttp.Response.t * string Lwt.t;
-                      out_cli: Cohttp.Request.t -> string -> unit Lwt.t}
+type cohttp_server =
+  {base_url:string;
+   in_srv:
+     ?pred:(Cohttp.Request.t -> bool) -> paths:string list -> unit -> (Cohttp.Request.t * Cohttp_lwt.Body.t) Lwt.t;
+   out_srv: (Cohttp.Response.t * Cohttp_lwt.Body.t) Lwt.t -> unit Lwt.t}
+type cohttp_client =
+  {in_cli: (Cohttp.Response.t * string) Lwt.t;
+   out_cli: path:string -> params:(string * string list) list -> unit Lwt.t}
 
 type _ Endpoint.conn_kind +=
-       CohttpServer : cohttp_server Endpoint.conn_kind
- |   CohttpClient : cohttp_client Endpoint.conn_kind
+     CohttpServer : cohttp_server Endpoint.conn_kind
+   | CohttpClient : cohttp_client Endpoint.conn_kind
 
 let start_server host port callback () =
   let open Lwt.Infix in
@@ -34,7 +32,7 @@ let in_mvar mvar f =
 module ActionTable : sig
   type 'a t
   val create : unit -> 'a t
-  val wait : 'a t -> pred:(Cohttp.Request.t -> bool) -> paths:string list -> 'a Lwt.t
+  val wait : 'a t -> pred:(Cohttp.Request.t -> bool) -> base_path:string -> paths:string list -> 'a Lwt.t
   val dispatch : 'a t -> Cohttp.Request.t -> 'a -> unit Lwt.t
 end = struct
   open Lwt
@@ -42,10 +40,11 @@ end = struct
   type 'a t = (string, (pred * 'a Lwt.u) list) Hashtbl.t Lwt_mvar.t
 
   let create () = Lwt_mvar.create (Hashtbl.create 42)
-  let wait tbl ~pred ~paths =
+  let wait tbl ~pred ~base_path ~paths =
     in_mvar tbl begin fun hash ->
       let wait, wake = Lwt.wait () in
       let put path =
+        let path = base_path ^ path in
         print_endline @@ "put:" ^ path;
         begin match Hashtbl.find_opt hash path with
         | Some xs -> Hashtbl.replace hash path ((pred, wake)::xs)
@@ -86,18 +85,19 @@ end = struct
     return ()
 end
 
-let http_acceptor ?(host="0.0.0.0") ~port () : cohttp_server Endpoint.acceptor Lwt.t =
+
+let http_acceptor ?(base_url="FIXME") ?(host="0.0.0.0") ~port () : cohttp_server Endpoint.acceptor Lwt.t =
   let open Lwt in
   let table = ActionTable.create () in
   let callback conn req body =
     print_endline "callback start";
     let wait, wake = Lwt.wait () in
-    let outf resp body = Lwt.wakeup wake (resp, body)
+    let outf (resp, body) = Lwt.wakeup wake (resp, body); Lwt.return ()
     and clsf () = ()
     in
-    print_endline "dispatch";
-    ActionTable.dispatch table req ((req,body), outf, clsf) >>= fun () ->
-    print_endline "dispatched";
+    print_endline @@ "dispatch:" ^ (req.Cohttp_lwt.Request.resource);
+    let%lwt () = ActionTable.dispatch table req ((req,body), outf, clsf) in
+    print_endline @@ "dispatched" ^ (req.Cohttp_lwt.Request.resource);
     wait
   in
   Lwt.async (start_server host port callback);
@@ -105,6 +105,7 @@ let http_acceptor ?(host="0.0.0.0") ~port () : cohttp_server Endpoint.acceptor L
     print_endline @@ "wait for" ^ List.hd paths;
     ActionTable.wait table ~pred ~paths
   in
+  let base_path = Uri.of_string base_url |> Uri.path in
   Lwt.return @@
     (fun () ->
       print_endline "accept!";
@@ -112,97 +113,176 @@ let http_acceptor ?(host="0.0.0.0") ~port () : cohttp_server Endpoint.acceptor L
       let wait2, wake2 = Lwt.wait () in
       return
         {Endpoint.handle={
-           in_srv=(fun ?pred paths ->
-             print_endline "wait for client";
-             wait_for_client ?pred ~paths >>= fun (in_,outf,clsf) ->
-             print_endline "woken up";
+           base_url;
+           in_srv=(fun ?pred ~paths () ->
+             let%lwt (in_,outf,clsf) = wait_for_client ?pred ~base_path ~paths in
              Lwt.wakeup wake1 outf;
              Lwt.wakeup wake2 clsf;
              return in_);
-           out_srv=(fun head body -> if Lwt.state wait1 = Sleep then failwith "write: no request" else wait1 >>= fun f -> Lwt.return (f head (`String(body))))};
-         close=(fun () -> if Lwt.state wait2 = Sleep then failwith "close: no request" else wait2 >>= fun f -> Lwt.return (f ()))}
+           out_srv=(fun t ->
+             if Lwt.state wait1 = Sleep
+             then failwith "write: no request"
+             else let%lwt f = wait1 in
+                  t >>= f)};
+         close=(fun () ->
+           if Lwt.state wait2 = Sleep
+           then Lwt.fail (Failure "close: no request")
+           else let%lwt f = wait2 in
+                Lwt.return (f ()))}
     )
 
-(* TODO *)
-let http_connector ~(host : string) () : cohttp_client Endpoint.connector =
-  failwith "http_connector unimplemented"
 
+let http_parameter_contains (key,value) req =
+  let uri = req |> Cohttp.Request.resource |> Uri.of_string in
+  Uri.get_query_param uri key = Some value
 
-(* TODO *)
-module HttpParsersAndPrinters = struct
+let parse t =
+  let open Lwt in
+  let%lwt (req, _body) = t in
+  let uri = req |> Cohttp.Request.resource |> Uri.of_string in
+  Lwt.return Uri.(path uri, Uri.query uri)
+
+let http_connector ~(base_url : string) () : cohttp_client Endpoint.connector =
+  fun () ->
+  let open Lwt in
+  let%lwt endp = Resolver_lwt.resolve_uri ~uri:(Uri.of_string base_url) Resolver_lwt_unix.system in
+  let%lwt client = Conduit_lwt_unix.endp_to_client ~ctx:Conduit_lwt_unix.default_ctx endp in
+  let%lwt (_conn, ic, oc) = Conduit_lwt_unix.connect ~ctx:Conduit_lwt_unix.default_ctx client in
+  let wait_input, wake_input = Lwt.wait () in
+  let wait_close, wake_close = Lwt.wait () in
+  return {Endpoint.handle={in_cli=begin
+                             let%lwt r = wait_input in
+                             print_endline @@ "in_cli, path:" ^ base_url;
+                             Lwt.wakeup wake_close ();
+                             return r
+                           end;
+                           out_cli=(fun ~path ~params ->
+                             print_endline @@"out_cli, path:" ^path;
+                             let uri = Uri.of_string (base_url ^ path) in
+                             let uri = Uri.add_query_params uri params in
+                             let%lwt resp,body = Cohttp_lwt_unix.Client.call `GET uri in
+                             let%lwt body = Cohttp_lwt.Body.to_string body in
+                             print_endline @@"got:" ^body;
+                             Lwt.wakeup wake_input (resp, body);
+                             return ()
+                          )};
+          close=(fun () ->
+            print_endline "close func of http_connector";
+            wait_close >>= fun () ->
+            Lwt.catch (fun () ->
+                Lwt_io.close ic >>= fun () ->
+                Lwt_io.close oc
+              ) (fun _exn -> return ()))}
+
+open OAuth
+
+module HttpParsersAndPrinters(M:sig
+                                  val oauth_start_url_base : string
+                                  val client_id : string
+                                  val client_secret : string
+                                end) = struct
+
   module Receivers = struct
     open Lwt
     open Cohttp_lwt_unix
 
-    let _oauth {in_srv} =
-      print_endline "waiting /oauth";
-      in_srv ["/oauth"] >>= fun (req,body) ->
-      Request.sexp_of_t req |> Sexplib.Sexp.to_string |> print_endline;
-      Lwt.return (`oauth(Data (), dummy))
+    let _oauth {base_url; in_srv} =
+      let%lwt _ = in_srv ~paths:["/oauth"] () in
+      return (`oauth(Data (), dummy))
 
-    let _login_fail_or_success ({in_srv}, cookie) =
-      print_endline "before login_fail_or_success";
-      in_srv ~pred:(fun _ -> true)
-        ["/login_fail"; "/success"] >>= fun (req, body)  ->
-      print_endline "login_fail_or_success";
-      match req |> Request.resource |> Uri.of_string |> Uri.path  with
-      | "/login_fail" ->
-         print_endline "login_fail";
-         Lwt.return @@ `login_fail(Data "", dummy)
-      | "/success" ->
-         print_endline "success";
-         Lwt.return @@ `success(Data ("", ""), dummy)
-      | _ -> raise AcceptAgain
+    let _callback_fail_or_success ({base_url; in_srv}, state) =
+      let%lwt path, query =
+        parse @@ in_srv
+                 ~pred:(http_parameter_contains ("state", state))
+                 ~paths:["/callback"] ()
+      in
+      match List.assoc_opt "code" query with
+      | Some [code] ->
+         let redir_url = base_url^ "/callback" in
+         return @@ `callback_success(Data (redir_url, code), dummy)
+      | _ ->
+         return @@ `callback_fail(Data (), dummy)
 
     let _200 {in_cli} =
-      failwith "receive 200: not implemented"
-      (* Lwt.return (`_200(Data (Obj.magic ()), Obj.magic ())) *)
+      let%lwt _req, body = in_cli in
+      return @@ `_200 (Data body, dummy)
   end
+
   module Senders = struct
-    let _200 {out_srv} (`_200(_, Data _, _) : [`_200 of _]) =
-      out_srv (Cohttp.Response.make ()) "hello world"
+    let _302_oauth_start {base_url; out_srv} (`_302_oauth_start(_, Data state, _) : [`_302_oauth_start of _]) =
+      let my_callback_url = base_url ^ "/callback" in
+      let redir_url = Uri.of_string M.oauth_start_url_base in
+      let redir_url =
+        Uri.add_query_params' redir_url
+          [("client_id", M.client_id); ("redirect_uri", my_callback_url); ("state", state)]
+      in
+      out_srv
+        (Cohttp_lwt_unix.Server.respond_string
+                    ~status:`Found
+                    ~headers:(Cohttp.Header.init_with "Location" @@ Uri.to_string redir_url)
+                    ~body:"" ())
 
-    let _302 {out_srv} (`_302(_, Data (url, backurl), _) : [`_302 of _]) =
-      print_endline "302";
-      out_srv (Cohttp.Response.make
-                    ~status:(`Found)
-                    ~headers:(Cohttp.Header.init_with "Location" url) ()) ""
+    let _200 {out_srv} (`_200(_, Data page, _) : [`_200 of _]) =
+      let open Lwt in
+      print_endline "serv resp:200";
+      out_srv @@ Cohttp_lwt_unix.Server.respond_string ~status:`OK ~body:page ()
 
-    let _tokens {out_cli} (`tokens(_, Data _, _) : [`tokens of _]) =
-      Lwt.return ()
+    let _access_token ({out_cli}, (redir_url, code)) (`access_token(_, Data (), _) : [`access_token of _]) =
+      out_cli
+        ~path:"/access_token"
+        ~params:[("client_id", [M.client_id]);
+                 ("redirect_uri", [redir_url]);
+                 ("client_secret", [M.client_secret]);
+                 ("code", [code])]
   end
 end
 
-open HttpParsersAndPrinters
+module M = HttpParsersAndPrinters(struct
+               let oauth_start_url_base = "https://www.facebook.com/dialog/oauth"
+               let client_id = "***"
+               let client_secret = "*****"
+             end)
+open M
 
-let oauth_provider acceptor =
+
+type 'a ctx = <s : 'a>
+[@@deriving lens]
+[@@runner]
+
+let oauth_consumer acceptor connector () =
+
   let open Linocaml_lwt in
   let role_U = mk_role_U CohttpServer in
-  let role_A = mk_role_A CohttpClient in
-  (* let%lin #s = Scribble_lwt.Internal.__initiate ~myname:"role_C" in *)
+  let role_P = mk_role_P CohttpClient in
+
   let%lin #s = initiate_C () in
+
   let%lin `oauth(_,#s) = accept s acceptor role_U in
-  let cookie = "123abc" in
-  let%lin #s = send s role_U msg_302 ("https://api.twitter.com/oauth/authenticate?oauth_token=","") in
+  let state = "123abc" in
+  let%lin #s = send s role_U msg_302_oauth_start state in
   let%lin #s = disconnect s role_U in
-  begin match%lin accept_corr s acceptor role_U cookie with
-  | `login_fail(_, #s) ->
-     let%lin #s = send s role_U msg_200 () in
+
+  begin match%lin accept_corr s acceptor state role_U with
+  | `callback_fail(_, #s) ->
+     let%lin #s = send s role_U msg_200 "Authentication failure" in
      close s
-  | `success(_, #s) ->
-     let connector = http_connector ~host:"" () in (* TODO *)
-     let%lin #s = connect s connector role_A msg_tokens "" in (* TODO *)
-     let%lin `_200(_,#s) = receive s role_A in
-     let%lin #s = disconnect s role_A in
-     let%lin #s = send s role_U msg_200 () in
+
+  | `callback_success(code, #s) ->
+     let url, code_ = code in print_endline @@ "callback_success,"^url^","^code_;
+     let%lin #s = connect_corr s connector code role_P msg_access_token () in
+     let%lin `_200(_,#s) = receive s role_P in
+     let%lin #s = disconnect s role_P in
+     let%lin #s = send s role_U msg_200 "Success" in
      let%lin #s = disconnect s role_U in
      close s
   end
+
 
 let () =
   Lwt_main.run
     begin
       let open Lwt in
-      http_acceptor ~port:8080 () >>= fun acceptor ->
-      run_ctx oauth_provider acceptor
+      let%lwt acceptor = http_acceptor ~port:8080 ~base_url:"https://keigoimai.info/scribble" () in
+      let connector = http_connector ~base_url:"https://graph.facebook.com/v2.11/oauth" () in
+      run_ctx (oauth_consumer acceptor connector) ()
     end

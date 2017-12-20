@@ -54,8 +54,6 @@ module type SESSION = sig
 
   module Endpoint : ENDPOINT with type 'a io = 'a io
 
-  exception AcceptAgain
-
   module Sender : sig
     type ('c,'v) t = ('c -> 'v -> unit io, [%imp Senders]) Ppx_implicits.t
   end
@@ -158,6 +156,14 @@ module type SESSION = sig
     -> 'corr
     -> ('dir,'c) role
     -> ('pre, 'post, 'br lin) monad
+
+  (** invariant: 'br must be [`tag of 'a * 'b sess] *)
+  val run_server :
+    (('dir,'c) role -> 'c Endpoint.acceptor -> ([`accept of ('dir,'c) role * 'br] sess, empty, unit lin) monad)
+    -> ('dir, 'c) role
+    -> 'c Endpoint.acceptor
+    -> unit io
+
 
   val disconnect :
     ([ `disconnect of ('dir,'c) role * 'p sess] sess, empty, 'pre, 'post) slot

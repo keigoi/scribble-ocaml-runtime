@@ -11,8 +11,6 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
   module IO = LinIO.IO
   module E = Endpoint
 
-  exception AcceptAgain
-
   type 'a io = 'a LinIO.IO.io
   type ('p,'q,'a) monad = ('p,'q,'a) LinIO.monad
 
@@ -284,6 +282,16 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
         let conn = E.detach s dir in
         IO.return (pre, Lin_Internal__ (Data conn))
       end
+
+  let run_server :
+    (('dir,'c) role -> 'c Endpoint.acceptor -> ([`accept of ('dir,'c) role * 'br] sess, empty, unit lin) monad)
+    -> ('dir, 'c) role
+    -> 'c Endpoint.acceptor
+    -> unit io = fun f role acpt ->
+    let s = E.create ~myname:(Endpoint.string_of_key role) in
+    LinIO.Syntax.Internal.__run (f role (fun () -> acpt ())) (Lin_Internal__ (EP s))
+
+
 
   module Shmem = struct
     type s = (string, RawChan.t) Hashtbl.t

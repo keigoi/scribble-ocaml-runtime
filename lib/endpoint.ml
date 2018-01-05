@@ -9,13 +9,15 @@ module Make(IO:Linocaml.Base.IO)
   type 'c connector = unit -> 'c conn IO.io
   type 'c acceptor  = unit -> 'c conn IO.io
 
+  external polyeq : 'a conn_kind -> 'b conn_kind -> bool = "%equal"
+
   type pair = Pair : 'c conn_kind * 'c -> pair
   let unpack : 'c conn_kind -> pair -> 'c =
     fun _ (Pair(_,p)) -> Obj.magic p
 
   let conn_kind_eq : 'c1 'c2. 'c1 conn_kind -> 'c2 conn_kind -> bool =
     fun k1 k2 ->
-    k1 = Obj.magic k2
+    polyeq k1 k2
 
   module MapKey = struct
     type 'a key = Key : 'a conn_kind * string -> 'a conn key
@@ -54,7 +56,6 @@ module Make(IO:Linocaml.Base.IO)
       | c::cs -> c () >>= fun _ -> close cs
     in
     close !r
-
 
   let connect : t -> 'c key -> 'c connector -> unit IO.io = fun t (k,s) conn ->
     let open IO in

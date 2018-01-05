@@ -120,19 +120,30 @@ let oauth_consumer (module M:OAuthParserPrinterParams) acceptor connector () =
      close s
   end
 
+let acceptor, hook =
+  http_acceptor ~base_path:"/scribble"
 
 let () =
-  Lwt_main.run
-    begin
-      let module Params = struct
-          let oauth_start_url = "https://www.facebook.com/dialog/oauth"
-          let callback_url = "https://keigoimai.info/scribble/callback"
-          let client_id = "1491337000919429"
-          let client_secret = "****"
-        end
-      in
-      let%lwt acceptor = http_acceptor ~host:"0.0.0.0" ~port:8080 ~base_path:"/scribble" () in
-      let connector = http_connector ~base_url:"https://graph.facebook.com/v2.11/oauth" () in
+  Cohttp_server_lwt.hook := hook
 
-      run_ctx (oauth_consumer (module Params) acceptor connector) ()
+let _ =
+  let module Params = struct
+      let oauth_start_url = "https://www.facebook.com/dialog/oauth"
+      let callback_url = "https://keigoimai.info/scribble/callback"
+      let client_id = "1491337000919429"
+      let client_secret = "*****"
     end
+  in
+  let connector = http_connector ~base_url:"https://graph.facebook.com/v2.11/oauth" () in
+  let rec loop () =
+    let open Lwt in
+    run_ctx (oauth_consumer (module Params) acceptor connector) () >>= fun () ->
+    loop ()
+  in loop ()
+
+
+let () =
+  print_endline "running cohttp server";
+  match Cmdliner.Term.eval Cohttp_server_lwt.cmd with
+  | `Error _ -> exit 1
+  | _ -> exit 0

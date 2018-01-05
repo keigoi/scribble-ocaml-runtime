@@ -1,9 +1,7 @@
 open Scribble_lwt
 
 type cohttp_server =
-  {host: string;
-   base_path: string;
-   port: int;
+  {base_path: string;
    read_request:
      ?pred:(Cohttp.Request.t -> bool)
    -> paths:string list
@@ -42,17 +40,21 @@ let in_mvar mvar f =
       Lwt_mvar.put mvar content)
 
 module ActionTable : sig
-  type 'a t
-  val create : unit -> 'a t
-  val wait : 'a t -> pred:(Cohttp.Request.t -> bool) -> base_path:string -> paths:string list -> 'a Lwt.t
-  val dispatch : 'a t -> Cohttp.Request.t -> 'a -> unit Lwt.t
+  type t
+  val create : unit -> t
+  type in_ = Cohttp.Request.t * Cohttp_lwt.Body.t
+  type out = Cohttp.Response.t * Cohttp_lwt.Body.t
+  val wait : t -> ?pred:(Cohttp.Request.t -> bool) -> base_path:string -> paths:string list -> unit -> (in_ * out Lwt.u) Lwt.t
+  val dispatch : t -> Cohttp.Request.t -> Cohttp_lwt.Body.t -> out option Lwt.t
 end = struct
   open Lwt
   type pred = Cohttp.Request.t -> bool
-  type 'a t = (string, (pred * 'a Lwt.u) list) Hashtbl.t Lwt_mvar.t
+  type in_ = Cohttp.Request.t * Cohttp_lwt.Body.t
+  type out = Cohttp.Response.t * Cohttp_lwt.Body.t
+  type t = (string, (pred *  (in_ * out Lwt.u) Lwt.u) list) Hashtbl.t Lwt_mvar.t
 
   let create () = Lwt_mvar.create (Hashtbl.create 42)
-  let wait tbl ~pred ~base_path ~paths =
+  let wait (tbl:t) ?(pred=(fun _ -> true)) ~base_path ~paths () : (in_ * out Lwt.u) Lwt.t =
     in_mvar tbl begin fun hash ->
       let wait, wake = Lwt.wait () in
       let put path =
@@ -66,73 +68,64 @@ end = struct
       return wait
       end >>= fun wait ->
     wait
-  let dispatch tbl req a =
+  let dispatch (tbl:t) req body : out option Lwt.t =
     let path : string = req |> Cohttp.Request.resource |> Uri.of_string |> Uri.path in
     in_mvar tbl begin fun hash ->
       let w =
         match Hashtbl.find_opt hash path with
         | Some xs ->
            let rec loop acc = function
-             | (f,w)::xs -> if f req
+             | (pred,w)::xs -> if pred req
                             then (w, acc @ xs)
-                            else loop ((f,w)::acc) xs
+                            else loop ((pred,w)::acc) xs
              | [] ->
                 failwith "path found but no action"
            in
            let w, xs = loop [] xs in
            Hashtbl.replace hash path xs;
-           w
+           Some w
         | _ ->
-           failwith "no action"
+           None
       in
       return w
       end >>= fun w ->
-    Lwt.wakeup w a;
-    return ()
+    match w with
+    | Some w ->
+       let wait, wake = Lwt.wait () in
+       Lwt.wakeup w ((req,body), wake);
+       wait >>= fun res ->
+       Lwt.return (Some res)
+    | None ->
+       Lwt.return None
 end
 
+type cohttp_server_hook = Cohttp.Request.t -> Cohttp_lwt.Body.t -> (Cohttp.Response.t * Cohttp_lwt.Body.t) option Lwt.t
 
-let http_acceptor ?(host="0.0.0.0") ?(base_path="/") ~port () : cohttp_server Endpoint.acceptor Lwt.t =
+let http_acceptor ~base_path : cohttp_server Endpoint.acceptor * cohttp_server_hook =
   let open Lwt in
   let table = ActionTable.create () in
-  let callback conn req body =
+  let callback req body =
+    ActionTable.dispatch table req body
+  in
+  let acceptor () =
     let wait, wake = Lwt.wait () in
-    let outf (resp, body) = Lwt.wakeup wake (resp, body); Lwt.return ()
-    and clsf () = ()
-    in
-    ActionTable.dispatch table req ((req,body), outf, clsf) >>= fun () ->
-    wait
+    return
+      {Endpoint.handle={
+         base_path;
+         read_request = (fun ?pred ~paths () ->
+           ActionTable.wait table ?pred ~base_path ~paths () >>= fun (in_, out_wake) ->
+           Lwt.wakeup wake out_wake;
+           return in_);
+         write_response = (fun res ->
+           if Lwt.state wait = Sleep
+           then Lwt.fail (Failure "write: no request")
+           else wait >>= fun u ->
+                Lwt.return (Lwt.wakeup u res)
+       )};
+       close=(fun () -> Lwt.return ())}
   in
-  Lwt.async (start_server host port callback);
-  let wait_for_client ?(pred=fun _->true) ~paths =
-    ActionTable.wait table ~pred ~paths
-  in
-  Lwt.return @@
-    (fun () ->
-      let wait1, wake1 = Lwt.wait () in
-      let wait2, wake2 = Lwt.wait () in
-      return
-        {Endpoint.handle={
-           host;
-           base_path;
-           port;
-           read_request = (fun ?pred ~paths () ->
-             wait_for_client ?pred ~base_path ~paths >>= fun (in_,outf,clsf) ->
-             Lwt.wakeup wake1 outf;
-             Lwt.wakeup wake2 clsf;
-             return in_);
-           write_response = (fun res ->
-             if Lwt.state wait1 = Sleep
-             then failwith "write: no request"
-             else wait1 >>= fun f ->
-                  f res
-         )};
-         close=(fun () ->
-           if Lwt.state wait2 = Sleep
-           then Lwt.fail (Failure "close: no request")
-           else wait2 >>= fun f ->
-                Lwt.return (f ()))}
-    )
+  (acceptor, callback)
+
 
 let http_connector ~(base_url : string) () : cohttp_client Endpoint.connector =
   fun () ->

@@ -4,5 +4,4 @@
  ((name scribble)
   (public_name scribble)
   ; (flags ("-leopard"))
-  (flags ("-ppx" "`ocamlfind query ppx_implicits`/ppx_implicits"))
-  (libraries (threads linocaml ppx_implicits.runtime))))
+  (libraries (threads linocaml))))

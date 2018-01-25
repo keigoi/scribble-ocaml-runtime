@@ -1,8 +1,3 @@
-(* Generated from scribble-ocaml https://github.com/keigoi/scribble-ocaml
- * This code should be compiled with scribble-ocaml-runtime
- * https://github.com/keigoi/scribble-ocaml-runtime *)
-open Scribble
-
 type oAuth
 
 module type TYPES = sig
@@ -22,96 +17,241 @@ module Make(Session:Scribble.Base.SESSION)(Types:TYPES) = struct
 
 type ('c_C, 'c_P) oAuth_U = ('c_C, 'c_P) oAuth_U_1
 and ('c_C, 'c_P) oAuth_U_1 =
-  [`send of
-    [`oauth of ([`C], 'c_C) role connect * unit data *
-      [`recv of ([`C], 'c_C) role * [`_302_oauth_start of state data *
-        [`disconnect of ([`C], 'c_C) role *
-          [`send of
-            [`authorize_request of ([`P], 'c_P) role connect * state data *
-              [`recv of ([`P], 'c_P) role * [`_200 of page data *
-                [`disconnect of ([`P], 'c_P) role *
-                  [`send of
-                    [`submit of ([`P], 'c_P) role connect * (id * pass) data *
-                      [`recv of ([`P], 'c_P) role *
-                        [`_302_success of code data *
-                          [`disconnect of ([`P], 'c_P) role *
-                            [`send of
-                              [`callback_success of ([`C], 'c_C) role connect * code data *
-                                [`recv of ([`C], 'c_C) role * [`_200 of page data *
-                                  [`disconnect of ([`C], 'c_C) role *
-                                    [`close] sess] sess]] sess]] sess] sess
-                        |`_302_fail of unit data *
-                          [`disconnect of ([`P], 'c_P) role *
-                            [`send of
-                              [`callback_fail of ([`C], 'c_C) role connect * unit data *
-                                [`recv of ([`C], 'c_C) role * [`_200 of page data *
-                                  [`close] sess]] sess]] sess] sess]] sess]] sess] sess]] sess]] sess] sess]] sess]]
+  [`connect of [`C of 'c_C * [`oauth of unit data *
+    [`recv of [`C of 'c_C * [`_302_oauth_start of state data *
+      [`disconnect of [`C of 'c_C *
+        [`connect of [`P of 'c_P * [`authorize_request of state data *
+          [`recv of [`P of 'c_P * [`_200 of page data *
+            [`disconnect of [`P of 'c_P *
+              [`connect of [`P of 'c_P * [`submit of (id * pass) data *
+                [`recv of [`P of 'c_P *
+                  [`_302_success of code data *
+                    [`disconnect of [`P of 'c_P *
+                      [`connect of [`C of 'c_C * [`callback_success of code data *
+                        [`recv of [`C of 'c_C * [`_200 of page data *
+                          [`disconnect of [`C of 'c_C *
+                            [`close] sess]] sess]]] sess]]] sess]] sess
+                  |`_302_fail of unit data *
+                    [`disconnect of [`P of 'c_P *
+                      [`connect of [`C of 'c_C * [`callback_fail of unit data *
+                        [`recv of [`C of 'c_C * [`_200 of page data *
+                          [`close] sess]]] sess]]] sess]] sess]]] sess]]] sess]] sess]]] sess]]] sess]] sess]]] sess]]]
 type ('c_U, 'c_P) oAuth_C = ('c_U, 'c_P) oAuth_C_1
 and ('c_U, 'c_P) oAuth_C_1 =
-  [`accept of ([`U], 'c_U) role *
-    [`oauth of unit data *
-      [`send of
-        [`_302_oauth_start of ([`U], 'c_U) role * state data *
-          [`disconnect of ([`U], 'c_U) role *
-            [`accept of ([`U], 'c_U) role *
-              [`callback_success of code data *
-                [`send of
-                  [`access_token of ([`P], 'c_P) role connect * unit data *
-                    [`recv of ([`P], 'c_P) role * [`_200 of accessToken data *
-                      [`disconnect of ([`P], 'c_P) role *
-                        [`send of
-                          [`_200 of ([`U], 'c_U) role * page data *
-                            [`disconnect of ([`U], 'c_U) role *
-                              [`close] sess] sess]] sess] sess]] sess]] sess
-              |`callback_fail of unit data *
-                [`send of
-                  [`_200 of ([`U], 'c_U) role * page data *
-                    [`close] sess]] sess]] sess] sess]] sess]]
+  [`accept of [`U of 'c_U * [`oauth of unit data *
+    [`send of [`U of 'c_U * [`_302_oauth_start of state data *
+      [`disconnect of [`U of 'c_U *
+        [`accept of [`U of 'c_U *
+          [`callback_success of code data *
+            [`connect of [`P of 'c_P * [`access_token of unit data *
+              [`recv of [`P of 'c_P * [`_200 of accessToken data *
+                [`disconnect of [`P of 'c_P *
+                  [`send of [`U of 'c_U * [`_200 of page data *
+                    [`disconnect of [`U of 'c_U *
+                      [`close] sess]] sess]]] sess]] sess]]] sess]]] sess
+          |`callback_fail of unit data *
+            [`send of [`U of 'c_U * [`_200 of page data *
+              [`close] sess]]] sess]]] sess]] sess]]] sess]]]
 type ('c_U, 'c_C) oAuth_P = ('c_U, 'c_C) oAuth_P_1
 and ('c_U, 'c_C) oAuth_P_1 =
-  [`accept of ([`U], 'c_U) role *
-    [`authorize_request of state data *
-      [`send of
-        [`_200 of ([`U], 'c_U) role * page data *
-          [`disconnect of ([`U], 'c_U) role *
-            [`accept of ([`U], 'c_U) role *
-              [`submit of (id * pass) data *
-                [`send of
-                  [`_302_success of ([`U], 'c_U) role * code data *
-                    [`disconnect of ([`U], 'c_U) role *
-                      [`accept of ([`C], 'c_C) role *
-                        [`access_token of unit data *
-                          [`send of
-                            [`_200 of ([`C], 'c_C) role * accessToken data *
-                              [`disconnect of ([`C], 'c_C) role *
-                                [`close] sess] sess]] sess]] sess] sess
-                  |`_302_fail of ([`U], 'c_U) role * unit data *
-                    [`disconnect of ([`U], 'c_U) role *
-                      [`close] sess] sess]] sess]] sess] sess]] sess]]
+  [`accept of [`U of 'c_U * [`authorize_request of state data *
+    [`send of [`U of 'c_U * [`_200 of page data *
+      [`disconnect of [`U of 'c_U *
+        [`accept of [`U of 'c_U * [`submit of (id * pass) data *
+          [`send of [`U of 'c_U *
+            [`_302_success of code data *
+              [`disconnect of [`U of 'c_U *
+                [`accept of [`C of 'c_C * [`access_token of unit data *
+                  [`send of [`C of 'c_C * [`_200 of accessToken data *
+                    [`disconnect of [`C of 'c_C *
+                      [`close] sess]] sess]]] sess]]] sess]] sess
+            |`_302_fail of unit data *
+              [`disconnect of [`U of 'c_U *
+                [`close] sess]] sess]]] sess]]] sess]] sess]]] sess]]]
 
-let mk_role_U c : ([`U], _) role = Internal.__mkrole c "role_U"
-let mk_role_C c : ([`C], _) role = Internal.__mkrole c "role_C"
-let mk_role_P c : ([`P], _) role = Internal.__mkrole c "role_P"
+module U = struct
+  let initiate_U : unit -> ('c, 'c, ('c_C, 'c_P) oAuth_U sess) monad =
+    fun () -> Internal.__initiate ~myname:"role_U"
 
-let initiate_U : unit -> ('c, 'c, ('c_C, 'c_P) oAuth_U sess) monad =
-  fun () ->
-  Internal.__initiate ~myname:"role_U"
-let initiate_C : unit -> ('c, 'c, ('c_U, 'c_P) oAuth_C sess) monad =
-  fun () ->
-  Internal.__initiate ~myname:"role_C"
-let initiate_P : unit -> ('c, 'c, ('c_U, 'c_C) oAuth_P sess) monad =
-  fun () ->
-  Internal.__initiate ~myname:"role_P"
+  module C = struct
+    module Make(P:sig
+        type conn
+        val conn : conn Endpoint.conn_kind
+        val write_oauth : conn -> [>`oauth of unit data * 'p sess] -> unit io
+        val write_callback_success : conn -> [>`callback_success of code data * 'p sess] -> unit io
+        val write_callback_fail : conn -> [>`callback_fail of unit data * 'p sess] -> unit io
+        val read_302_oauth_start : conn -> [`_302_oauth_start of state data * 'p0] io
+        val read_200 : conn -> [`_200 of page data * 'p0] io
+      end) = struct
+      module P = P
+      let role : ([>`C of P.conn * 'lab], P.conn, 'lab) role = {_pack_role=(fun labels -> `C(labels)) ; _repr="role_C"; _kind=P.conn}
 
-let msg_none = {_pack=(fun a -> `msg(a))}
-let msg_200 = {_pack=(fun a -> `_200(a))}
-let msg_302_fail = {_pack=(fun a -> `_302_fail(a))}
-let msg_302_oauth_start = {_pack=(fun a -> `_302_oauth_start(a))}
-let msg_302_success = {_pack=(fun a -> `_302_success(a))}
-let msg_access_token = {_pack=(fun a -> `access_token(a))}
-let msg_authorize_request = {_pack=(fun a -> `authorize_request(a))}
-let msg_callback_fail = {_pack=(fun a -> `callback_fail(a))}
-let msg_callback_success = {_pack=(fun a -> `callback_success(a))}
-let msg_oauth = {_pack=(fun a -> `oauth(a))}
-let msg_submit = {_pack=(fun a -> `submit(a))}
+      let oauth : 'p. ([>`oauth of unit data * 'p sess], P.conn, unit data * 'p sess) label = {_pack_label=(fun payload -> `oauth(payload)); _send=P.write_oauth}
+      let callback_success : 'p. ([>`callback_success of code data * 'p sess], P.conn, code data * 'p sess) label = {_pack_label=(fun payload -> `callback_success(payload)); _send=P.write_callback_success}
+      let callback_fail : 'p. ([>`callback_fail of unit data * 'p sess], P.conn, unit data * 'p sess) label = {_pack_label=(fun payload -> `callback_fail(payload)); _send=P.write_callback_fail}
+      let receive_302_oauth_start  : type p0. ([`_302_oauth_start of state data * p0], P.conn) labels = {_receive=P.read_302_oauth_start}
+      let receive_200  : type p0. ([`_200 of page data * p0], P.conn) labels = {_receive=P.read_200}
+    end
+
+    module Shmem = struct
+      include Make(struct
+          type conn = Raw.t
+          let conn = Shmem
+          let write_oauth = Raw.send
+          let write_callback_success = Raw.send
+          let write_callback_fail = Raw.send
+          let read_302_oauth_start = Raw.receive
+          let read_200 = Raw.receive
+        end)
+    end
+  end
+  module P = struct
+    module Make(P:sig
+        type conn
+        val conn : conn Endpoint.conn_kind
+        val write_authorize_request : conn -> [>`authorize_request of state data * 'p sess] -> unit io
+        val write_submit : conn -> [>`submit of (id * pass) data * 'p sess] -> unit io
+        val read_200 : conn -> [`_200 of page data * 'p0] io
+        val read_302_success_or_302_fail : conn -> [`_302_success of code data * 'p0|`_302_fail of unit data * 'p1] io
+      end) = struct
+      module P = P
+      let role : ([>`P of P.conn * 'lab], P.conn, 'lab) role = {_pack_role=(fun labels -> `P(labels)) ; _repr="role_P"; _kind=P.conn}
+
+      let authorize_request : 'p. ([>`authorize_request of state data * 'p sess], P.conn, state data * 'p sess) label = {_pack_label=(fun payload -> `authorize_request(payload)); _send=P.write_authorize_request}
+      let submit : 'p. ([>`submit of (id * pass) data * 'p sess], P.conn, (id * pass) data * 'p sess) label = {_pack_label=(fun payload -> `submit(payload)); _send=P.write_submit}
+      let receive_200  : type p0. ([`_200 of page data * p0], P.conn) labels = {_receive=P.read_200}
+      let receive_302_success_or_302_fail  : type p0 p1. ([`_302_success of code data * p0|`_302_fail of unit data * p1], P.conn) labels = {_receive=P.read_302_success_or_302_fail}
+    end
+
+    module Shmem = struct
+      include Make(struct
+          type conn = Raw.t
+          let conn = Shmem
+          let write_authorize_request = Raw.send
+          let write_submit = Raw.send
+          let read_200 = Raw.receive
+          let read_302_success_or_302_fail = Raw.receive
+        end)
+    end
+  end
+end
+
+module C = struct
+  let initiate_C : unit -> ('c, 'c, ('c_U, 'c_P) oAuth_C sess) monad =
+    fun () -> Internal.__initiate ~myname:"role_C"
+
+  module U = struct
+    module Make(P:sig
+        type conn
+        val conn : conn Endpoint.conn_kind
+        val write_302_oauth_start : conn -> [>`_302_oauth_start of state data * 'p sess] -> unit io
+        val write_200 : conn -> [>`_200 of page data * 'p sess] -> unit io
+        val read_oauth : conn -> [`oauth of unit data * 'p0] io
+        val read_callback_success_or_callback_fail : conn -> [`callback_success of code data * 'p0|`callback_fail of unit data * 'p1] io
+      end) = struct
+      module P = P
+      let role : ([>`U of P.conn * 'lab], P.conn, 'lab) role = {_pack_role=(fun labels -> `U(labels)) ; _repr="role_U"; _kind=P.conn}
+
+      let _302_oauth_start : 'p. ([>`_302_oauth_start of state data * 'p sess], P.conn, state data * 'p sess) label = {_pack_label=(fun payload -> `_302_oauth_start(payload)); _send=P.write_302_oauth_start}
+      let _200 : 'p. ([>`_200 of page data * 'p sess], P.conn, page data * 'p sess) label = {_pack_label=(fun payload -> `_200(payload)); _send=P.write_200}
+      let receive_oauth  : type p0. ([`oauth of unit data * p0], P.conn) labels = {_receive=P.read_oauth}
+      let receive_callback_success_or_callback_fail  : type p0 p1. ([`callback_success of code data * p0|`callback_fail of unit data * p1], P.conn) labels = {_receive=P.read_callback_success_or_callback_fail}
+    end
+
+    module Shmem = struct
+      include Make(struct
+          type conn = Raw.t
+          let conn = Shmem
+          let write_302_oauth_start = Raw.send
+          let write_200 = Raw.send
+          let read_oauth = Raw.receive
+          let read_callback_success_or_callback_fail = Raw.receive
+        end)
+    end
+  end
+  module P = struct
+    module Make(P:sig
+        type conn
+        val conn : conn Endpoint.conn_kind
+        val write_access_token : conn -> [>`access_token of unit data * 'p sess] -> unit io
+        val read_200 : conn -> [`_200 of accessToken data * 'p0] io
+      end) = struct
+      module P = P
+      let role : ([>`P of P.conn * 'lab], P.conn, 'lab) role = {_pack_role=(fun labels -> `P(labels)) ; _repr="role_P"; _kind=P.conn}
+
+      let access_token : 'p. ([>`access_token of unit data * 'p sess], P.conn, unit data * 'p sess) label = {_pack_label=(fun payload -> `access_token(payload)); _send=P.write_access_token}
+      let receive_200  : type p0. ([`_200 of accessToken data * p0], P.conn) labels = {_receive=P.read_200}
+    end
+
+    module Shmem = struct
+      include Make(struct
+          type conn = Raw.t
+          let conn = Shmem
+          let write_access_token = Raw.send
+          let read_200 = Raw.receive
+        end)
+    end
+  end
+end
+
+module P = struct
+  let initiate_P : unit -> ('c, 'c, ('c_U, 'c_C) oAuth_P sess) monad =
+    fun () -> Internal.__initiate ~myname:"role_P"
+
+  module U = struct
+    module Make(P:sig
+        type conn
+        val conn : conn Endpoint.conn_kind
+        val write_200 : conn -> [>`_200 of page data * 'p sess] -> unit io
+        val write_302_success : conn -> [>`_302_success of code data * 'p sess] -> unit io
+        val write_302_fail : conn -> [>`_302_fail of unit data * 'p sess] -> unit io
+        val read_authorize_request : conn -> [`authorize_request of state data * 'p0] io
+        val read_submit : conn -> [`submit of (id * pass) data * 'p0] io
+      end) = struct
+      module P = P
+      let role : ([>`U of P.conn * 'lab], P.conn, 'lab) role = {_pack_role=(fun labels -> `U(labels)) ; _repr="role_U"; _kind=P.conn}
+
+      let _200 : 'p. ([>`_200 of page data * 'p sess], P.conn, page data * 'p sess) label = {_pack_label=(fun payload -> `_200(payload)); _send=P.write_200}
+      let _302_success : 'p. ([>`_302_success of code data * 'p sess], P.conn, code data * 'p sess) label = {_pack_label=(fun payload -> `_302_success(payload)); _send=P.write_302_success}
+      let _302_fail : 'p. ([>`_302_fail of unit data * 'p sess], P.conn, unit data * 'p sess) label = {_pack_label=(fun payload -> `_302_fail(payload)); _send=P.write_302_fail}
+      let receive_authorize_request  : type p0. ([`authorize_request of state data * p0], P.conn) labels = {_receive=P.read_authorize_request}
+      let receive_submit  : type p0. ([`submit of (id * pass) data * p0], P.conn) labels = {_receive=P.read_submit}
+    end
+
+    module Shmem = struct
+      include Make(struct
+          type conn = Raw.t
+          let conn = Shmem
+          let write_200 = Raw.send
+          let write_302_success = Raw.send
+          let write_302_fail = Raw.send
+          let read_authorize_request = Raw.receive
+          let read_submit = Raw.receive
+        end)
+    end
+  end
+  module C = struct
+    module Make(P:sig
+        type conn
+        val conn : conn Endpoint.conn_kind
+        val write_200 : conn -> [>`_200 of accessToken data * 'p sess] -> unit io
+        val read_access_token : conn -> [`access_token of unit data * 'p0] io
+      end) = struct
+      module P = P
+      let role : ([>`C of P.conn * 'lab], P.conn, 'lab) role = {_pack_role=(fun labels -> `C(labels)) ; _repr="role_C"; _kind=P.conn}
+
+      let _200 : 'p. ([>`_200 of accessToken data * 'p sess], P.conn, accessToken data * 'p sess) label = {_pack_label=(fun payload -> `_200(payload)); _send=P.write_200}
+      let receive_access_token  : type p0. ([`access_token of unit data * p0], P.conn) labels = {_receive=P.read_access_token}
+    end
+
+    module Shmem = struct
+      include Make(struct
+          type conn = Raw.t
+          let conn = Shmem
+          let write_200 = Raw.send
+          let read_access_token = Raw.receive
+        end)
+    end
+  end
+end
 end

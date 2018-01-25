@@ -9,12 +9,11 @@ module Chan = Channel.Make
                   type m = Mutex.t
                   include Condition
                 end)
-module RawChan = Unsafe.Make_raw_dchan(Dchannel.Make(Chan))
 
 include Session.Make
           (Linocaml.Direct)
           (Chan)
-          (RawChan)
+          (Unsafe.Make_raw_dchan(Dchannel.Make(Chan)))
 
 type stream_ = {in_:in_channel; out:out_channel}
 
@@ -51,5 +50,5 @@ module Tcp : Base.TCP with module Endpoint = Endpoint and type stream = stream_ 
 end
 
 let shmem () =
-  let handle = RawChan.create () in
-  (fun () -> {Endpoint.handle; close=(fun _ -> ())}), (fun () -> {Endpoint.handle=RawChan.reverse handle; close=(fun _ -> ())})
+  let handle = Raw.create () in
+  (fun () -> {Endpoint.handle; close=(fun _ -> ())}), (fun () -> {Endpoint.handle=Raw.reverse handle; close=(fun _ -> ())})

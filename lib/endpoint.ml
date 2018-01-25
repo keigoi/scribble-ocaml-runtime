@@ -75,6 +75,10 @@ module Make(IO:Linocaml.Base.IO)
     Map.remove t.role2conn (MapKey.Key(k,s));
     conn
 
+  let disconnect : t -> 'c key -> unit IO.io = fun t (k,s) ->
+    let conn = detach t (k,s) in
+    conn.close ()
+
   let get_connection : t -> 'c key -> 'c conn = fun t (k,s) ->
     Map.find t.role2conn (MapKey.Key(k,s))
 

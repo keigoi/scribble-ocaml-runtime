@@ -6,7 +6,7 @@ type <ocaml> "Pervasives.string" from "stdlib" as AccessToken;
 type <ocaml> "Pervasives.string" from "stdlib" as Code;
 type <ocaml> "page" from "__functor_parameter__" as Page;
 
-explicit global protocol OAuth2Web(role U /* User */, role C /* Consumer */, role P /* Provider */)
+explicit global protocol OAuth(role U /* User */, role C /* Consumer */, role P /* Provider */)
 {
         // Starts OAuth.
 

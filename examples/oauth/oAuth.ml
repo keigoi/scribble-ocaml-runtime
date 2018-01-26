@@ -1,19 +1,20 @@
-type oAuth
+(* Generated from scribble-ocaml https://github.com/keigoi/scribble-ocaml
+ * This code should be compiled with scribble-ocaml-runtime
+ * https://github.com/keigoi/scribble-ocaml-runtime *)
 
 module type TYPES = sig
   type page
 end
 
-module Make(Session:Scribble.Base.SESSION)(Types:TYPES) = struct
-
+module Make (Session:Scribble.Base.SESSION) (Types:TYPES) = struct
   type id = string
-  and pass = string
-  and state = string
-  and code = string
-  and accessToken = string
-  and page = Types.page
+  type pass = string
+  type state = string
+  type accessToken = string
+  type code = string
+  type page = Types.page
 
-  open Session
+open Session
 
 type ('c_C, 'c_P) oAuth_U = ('c_C, 'c_P) oAuth_U_1
 and ('c_C, 'c_P) oAuth_U_1 =
@@ -74,7 +75,7 @@ module U = struct
     fun () -> Internal.__initiate ~myname:"role_U"
 
   module C = struct
-    module Make(P:sig
+    module Make(X:sig
         type conn
         val conn : conn Endpoint.conn_kind
         val write_oauth : conn -> [>`oauth of unit data * 'p sess] -> unit io
@@ -83,14 +84,19 @@ module U = struct
         val read_302_oauth_start : conn -> [`_302_oauth_start of state data * 'p0] io
         val read_200 : conn -> [`_200 of page data * 'p0] io
       end) = struct
-      module P = P
-      let role : ([>`C of P.conn * 'lab], P.conn, 'lab) role = {_pack_role=(fun labels -> `C(labels)) ; _repr="role_C"; _kind=P.conn}
+      let role : ([>`C of X.conn * 'lab], X.conn, 'lab) role =
+        {_pack_role=(fun labels -> `C(labels)) ; _repr="role_C"; _kind=X.conn}
 
-      let oauth : 'p. ([>`oauth of unit data * 'p sess], P.conn, unit data * 'p sess) label = {_pack_label=(fun payload -> `oauth(payload)); _send=P.write_oauth}
-      let callback_success : 'p. ([>`callback_success of code data * 'p sess], P.conn, code data * 'p sess) label = {_pack_label=(fun payload -> `callback_success(payload)); _send=P.write_callback_success}
-      let callback_fail : 'p. ([>`callback_fail of unit data * 'p sess], P.conn, unit data * 'p sess) label = {_pack_label=(fun payload -> `callback_fail(payload)); _send=P.write_callback_fail}
-      let receive_302_oauth_start  : type p0. ([`_302_oauth_start of state data * p0], P.conn) labels = {_receive=P.read_302_oauth_start}
-      let receive_200  : type p0. ([`_200 of page data * p0], P.conn) labels = {_receive=P.read_200}
+      let oauth : 'p. ([>`oauth of unit data * 'p sess], X.conn, unit data * 'p sess) label =
+        {_pack_label=(fun payload -> `oauth(payload)); _send=X.write_oauth}
+      let callback_success : 'p. ([>`callback_success of code data * 'p sess], X.conn, code data * 'p sess) label =
+        {_pack_label=(fun payload -> `callback_success(payload)); _send=X.write_callback_success}
+      let callback_fail : 'p. ([>`callback_fail of unit data * 'p sess], X.conn, unit data * 'p sess) label =
+        {_pack_label=(fun payload -> `callback_fail(payload)); _send=X.write_callback_fail}
+      let receive_302_oauth_start  : type p0. ([`_302_oauth_start of state data * p0], X.conn) labels =
+        {_receive=X.read_302_oauth_start}
+      let receive_200  : type p0. ([`_200 of page data * p0], X.conn) labels =
+        {_receive=X.read_200}
     end
 
     module Shmem = struct
@@ -106,7 +112,7 @@ module U = struct
     end
   end
   module P = struct
-    module Make(P:sig
+    module Make(X:sig
         type conn
         val conn : conn Endpoint.conn_kind
         val write_authorize_request : conn -> [>`authorize_request of state data * 'p sess] -> unit io
@@ -114,13 +120,17 @@ module U = struct
         val read_200 : conn -> [`_200 of page data * 'p0] io
         val read_302_success_or_302_fail : conn -> [`_302_success of code data * 'p0|`_302_fail of unit data * 'p1] io
       end) = struct
-      module P = P
-      let role : ([>`P of P.conn * 'lab], P.conn, 'lab) role = {_pack_role=(fun labels -> `P(labels)) ; _repr="role_P"; _kind=P.conn}
+      let role : ([>`P of X.conn * 'lab], X.conn, 'lab) role =
+        {_pack_role=(fun labels -> `P(labels)) ; _repr="role_P"; _kind=X.conn}
 
-      let authorize_request : 'p. ([>`authorize_request of state data * 'p sess], P.conn, state data * 'p sess) label = {_pack_label=(fun payload -> `authorize_request(payload)); _send=P.write_authorize_request}
-      let submit : 'p. ([>`submit of (id * pass) data * 'p sess], P.conn, (id * pass) data * 'p sess) label = {_pack_label=(fun payload -> `submit(payload)); _send=P.write_submit}
-      let receive_200  : type p0. ([`_200 of page data * p0], P.conn) labels = {_receive=P.read_200}
-      let receive_302_success_or_302_fail  : type p0 p1. ([`_302_success of code data * p0|`_302_fail of unit data * p1], P.conn) labels = {_receive=P.read_302_success_or_302_fail}
+      let authorize_request : 'p. ([>`authorize_request of state data * 'p sess], X.conn, state data * 'p sess) label =
+        {_pack_label=(fun payload -> `authorize_request(payload)); _send=X.write_authorize_request}
+      let submit : 'p. ([>`submit of (id * pass) data * 'p sess], X.conn, (id * pass) data * 'p sess) label =
+        {_pack_label=(fun payload -> `submit(payload)); _send=X.write_submit}
+      let receive_200  : type p0. ([`_200 of page data * p0], X.conn) labels =
+        {_receive=X.read_200}
+      let receive_302_success_or_302_fail  : type p0 p1. ([`_302_success of code data * p0|`_302_fail of unit data * p1], X.conn) labels =
+        {_receive=X.read_302_success_or_302_fail}
     end
 
     module Shmem = struct
@@ -134,6 +144,7 @@ module U = struct
         end)
     end
   end
+
 end
 
 module C = struct
@@ -141,7 +152,7 @@ module C = struct
     fun () -> Internal.__initiate ~myname:"role_C"
 
   module U = struct
-    module Make(P:sig
+    module Make(X:sig
         type conn
         val conn : conn Endpoint.conn_kind
         val write_302_oauth_start : conn -> [>`_302_oauth_start of state data * 'p sess] -> unit io
@@ -149,13 +160,17 @@ module C = struct
         val read_oauth : conn -> [`oauth of unit data * 'p0] io
         val read_callback_success_or_callback_fail : conn -> [`callback_success of code data * 'p0|`callback_fail of unit data * 'p1] io
       end) = struct
-      module P = P
-      let role : ([>`U of P.conn * 'lab], P.conn, 'lab) role = {_pack_role=(fun labels -> `U(labels)) ; _repr="role_U"; _kind=P.conn}
+      let role : ([>`U of X.conn * 'lab], X.conn, 'lab) role =
+        {_pack_role=(fun labels -> `U(labels)) ; _repr="role_U"; _kind=X.conn}
 
-      let _302_oauth_start : 'p. ([>`_302_oauth_start of state data * 'p sess], P.conn, state data * 'p sess) label = {_pack_label=(fun payload -> `_302_oauth_start(payload)); _send=P.write_302_oauth_start}
-      let _200 : 'p. ([>`_200 of page data * 'p sess], P.conn, page data * 'p sess) label = {_pack_label=(fun payload -> `_200(payload)); _send=P.write_200}
-      let receive_oauth  : type p0. ([`oauth of unit data * p0], P.conn) labels = {_receive=P.read_oauth}
-      let receive_callback_success_or_callback_fail  : type p0 p1. ([`callback_success of code data * p0|`callback_fail of unit data * p1], P.conn) labels = {_receive=P.read_callback_success_or_callback_fail}
+      let _302_oauth_start : 'p. ([>`_302_oauth_start of state data * 'p sess], X.conn, state data * 'p sess) label =
+        {_pack_label=(fun payload -> `_302_oauth_start(payload)); _send=X.write_302_oauth_start}
+      let _200 : 'p. ([>`_200 of page data * 'p sess], X.conn, page data * 'p sess) label =
+        {_pack_label=(fun payload -> `_200(payload)); _send=X.write_200}
+      let receive_oauth  : type p0. ([`oauth of unit data * p0], X.conn) labels =
+        {_receive=X.read_oauth}
+      let receive_callback_success_or_callback_fail  : type p0 p1. ([`callback_success of code data * p0|`callback_fail of unit data * p1], X.conn) labels =
+        {_receive=X.read_callback_success_or_callback_fail}
     end
 
     module Shmem = struct
@@ -170,17 +185,19 @@ module C = struct
     end
   end
   module P = struct
-    module Make(P:sig
+    module Make(X:sig
         type conn
         val conn : conn Endpoint.conn_kind
         val write_access_token : conn -> [>`access_token of unit data * 'p sess] -> unit io
         val read_200 : conn -> [`_200 of accessToken data * 'p0] io
       end) = struct
-      module P = P
-      let role : ([>`P of P.conn * 'lab], P.conn, 'lab) role = {_pack_role=(fun labels -> `P(labels)) ; _repr="role_P"; _kind=P.conn}
+      let role : ([>`P of X.conn * 'lab], X.conn, 'lab) role =
+        {_pack_role=(fun labels -> `P(labels)) ; _repr="role_P"; _kind=X.conn}
 
-      let access_token : 'p. ([>`access_token of unit data * 'p sess], P.conn, unit data * 'p sess) label = {_pack_label=(fun payload -> `access_token(payload)); _send=P.write_access_token}
-      let receive_200  : type p0. ([`_200 of accessToken data * p0], P.conn) labels = {_receive=P.read_200}
+      let access_token : 'p. ([>`access_token of unit data * 'p sess], X.conn, unit data * 'p sess) label =
+        {_pack_label=(fun payload -> `access_token(payload)); _send=X.write_access_token}
+      let receive_200  : type p0. ([`_200 of accessToken data * p0], X.conn) labels =
+        {_receive=X.read_200}
     end
 
     module Shmem = struct
@@ -192,6 +209,7 @@ module C = struct
         end)
     end
   end
+
 end
 
 module P = struct
@@ -199,7 +217,7 @@ module P = struct
     fun () -> Internal.__initiate ~myname:"role_P"
 
   module U = struct
-    module Make(P:sig
+    module Make(X:sig
         type conn
         val conn : conn Endpoint.conn_kind
         val write_200 : conn -> [>`_200 of page data * 'p sess] -> unit io
@@ -208,14 +226,19 @@ module P = struct
         val read_authorize_request : conn -> [`authorize_request of state data * 'p0] io
         val read_submit : conn -> [`submit of (id * pass) data * 'p0] io
       end) = struct
-      module P = P
-      let role : ([>`U of P.conn * 'lab], P.conn, 'lab) role = {_pack_role=(fun labels -> `U(labels)) ; _repr="role_U"; _kind=P.conn}
+      let role : ([>`U of X.conn * 'lab], X.conn, 'lab) role =
+        {_pack_role=(fun labels -> `U(labels)) ; _repr="role_U"; _kind=X.conn}
 
-      let _200 : 'p. ([>`_200 of page data * 'p sess], P.conn, page data * 'p sess) label = {_pack_label=(fun payload -> `_200(payload)); _send=P.write_200}
-      let _302_success : 'p. ([>`_302_success of code data * 'p sess], P.conn, code data * 'p sess) label = {_pack_label=(fun payload -> `_302_success(payload)); _send=P.write_302_success}
-      let _302_fail : 'p. ([>`_302_fail of unit data * 'p sess], P.conn, unit data * 'p sess) label = {_pack_label=(fun payload -> `_302_fail(payload)); _send=P.write_302_fail}
-      let receive_authorize_request  : type p0. ([`authorize_request of state data * p0], P.conn) labels = {_receive=P.read_authorize_request}
-      let receive_submit  : type p0. ([`submit of (id * pass) data * p0], P.conn) labels = {_receive=P.read_submit}
+      let _200 : 'p. ([>`_200 of page data * 'p sess], X.conn, page data * 'p sess) label =
+        {_pack_label=(fun payload -> `_200(payload)); _send=X.write_200}
+      let _302_success : 'p. ([>`_302_success of code data * 'p sess], X.conn, code data * 'p sess) label =
+        {_pack_label=(fun payload -> `_302_success(payload)); _send=X.write_302_success}
+      let _302_fail : 'p. ([>`_302_fail of unit data * 'p sess], X.conn, unit data * 'p sess) label =
+        {_pack_label=(fun payload -> `_302_fail(payload)); _send=X.write_302_fail}
+      let receive_authorize_request  : type p0. ([`authorize_request of state data * p0], X.conn) labels =
+        {_receive=X.read_authorize_request}
+      let receive_submit  : type p0. ([`submit of (id * pass) data * p0], X.conn) labels =
+        {_receive=X.read_submit}
     end
 
     module Shmem = struct
@@ -231,17 +254,19 @@ module P = struct
     end
   end
   module C = struct
-    module Make(P:sig
+    module Make(X:sig
         type conn
         val conn : conn Endpoint.conn_kind
         val write_200 : conn -> [>`_200 of accessToken data * 'p sess] -> unit io
         val read_access_token : conn -> [`access_token of unit data * 'p0] io
       end) = struct
-      module P = P
-      let role : ([>`C of P.conn * 'lab], P.conn, 'lab) role = {_pack_role=(fun labels -> `C(labels)) ; _repr="role_C"; _kind=P.conn}
+      let role : ([>`C of X.conn * 'lab], X.conn, 'lab) role =
+        {_pack_role=(fun labels -> `C(labels)) ; _repr="role_C"; _kind=X.conn}
 
-      let _200 : 'p. ([>`_200 of accessToken data * 'p sess], P.conn, accessToken data * 'p sess) label = {_pack_label=(fun payload -> `_200(payload)); _send=P.write_200}
-      let receive_access_token  : type p0. ([`access_token of unit data * p0], P.conn) labels = {_receive=P.read_access_token}
+      let _200 : 'p. ([>`_200 of accessToken data * 'p sess], X.conn, accessToken data * 'p sess) label =
+        {_pack_label=(fun payload -> `_200(payload)); _send=X.write_200}
+      let receive_access_token  : type p0. ([`access_token of unit data * p0], X.conn) labels =
+        {_receive=X.read_access_token}
     end
 
     module Shmem = struct
@@ -253,5 +278,7 @@ module P = struct
         end)
     end
   end
+
 end
+
 end

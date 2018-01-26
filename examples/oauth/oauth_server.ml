@@ -1,17 +1,9 @@
-(* request_stream part is from ocaml-cohttp where ISC license applies. *)
 open Linocaml_lwt
 open Scribble_lwt
 open Scribble_http_lwt
 
 module Protocol =
-  OAuth.Make(Scribble_lwt)(struct
-      type id = string
-      and pass = string
-      and state = string
-      and code = string * string
-      and accessToken = string
-      and page = string
-    end)
+  OAuth.Make(Scribble_lwt)(struct type page = string end)
 
 module Params = struct
   let oauth_start_url = "https://www.facebook.com/dialog/oauth"
@@ -83,7 +75,7 @@ end
 module P = struct
   open Lwt
 
-  let role = {_pack_role=(fun labels -> `P(labels)) ; _repr="role_U"; _kind=CohttpClient}
+  let role = {_pack_role=(fun labels -> `P(labels)) ; _repr="role_P"; _kind=CohttpClient}
 
   let access_token =
     {_pack_label = (fun payload -> `access_token(payload));

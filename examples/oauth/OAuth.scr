@@ -1,10 +1,10 @@
 module OAuth;
-type <ocaml> "Pervasives.string" from "stdlib" as Id;
-type <ocaml> "Pervasives.string" from "stdlib" as Pass;
-type <ocaml> "Pervasives.string" from "stdlib" as State;
-type <ocaml> "Pervasives.string" from "stdlib" as AccessToken;
-type <ocaml> "Pervasives.string" from "stdlib" as Code;
-type <ocaml> "page" from "__functor_parameter__" as Page;
+type <ocaml> "string" from "stdlib" as Id;
+type <ocaml> "string" from "stdlib" as Pass;
+type <ocaml> "string" from "stdlib" as State;
+type <ocaml> "string" from "stdlib" as AccessToken;
+type <ocaml> "string" from "stdlib" as Code;
+type <ocaml> "page" from "_functor" as Page;
 
 explicit global protocol OAuth(role U /* User */, role C /* Consumer */, role P /* Provider */)
 {

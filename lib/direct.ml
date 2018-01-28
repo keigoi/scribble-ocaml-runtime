@@ -48,7 +48,3 @@ module Tcp : Base.TCP with module Endpoint = Endpoint and type stream = stream_ 
         let sock_serv, _ = Unix.(accept sock_listen) in
         make (sock_serv, sock_serv))
 end
-
-let shmem () =
-  let handle = Raw.create () in
-  (fun () -> {Endpoint.handle; close=(fun _ -> ())}), (fun () -> {Endpoint.handle=Raw.reverse handle; close=(fun _ -> ())})

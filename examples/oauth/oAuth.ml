@@ -109,6 +109,7 @@ module U = struct
           let read_302_oauth_start = Raw.receive
           let read_200 = Raw.receive
         end)
+        let connector, acceptor = shmem ()
     end
   end
   module P = struct
@@ -142,6 +143,7 @@ module U = struct
           let read_200 = Raw.receive
           let read_302_success_or_302_fail = Raw.receive
         end)
+        let connector, acceptor = shmem ()
     end
   end
 
@@ -182,6 +184,7 @@ module C = struct
           let read_oauth = Raw.receive
           let read_callback_success_or_callback_fail = Raw.receive
         end)
+        let connector, acceptor = shmem ()
     end
   end
   module P = struct
@@ -207,6 +210,7 @@ module C = struct
           let write_access_token = Raw.send
           let read_200 = Raw.receive
         end)
+        let connector, acceptor = shmem ()
     end
   end
 
@@ -251,6 +255,7 @@ module P = struct
           let read_authorize_request = Raw.receive
           let read_submit = Raw.receive
         end)
+        let connector, acceptor = shmem ()
     end
   end
   module C = struct
@@ -276,6 +281,7 @@ module P = struct
           let write_200 = Raw.send
           let read_access_token = Raw.receive
         end)
+        let connector, acceptor = shmem ()
     end
   end
 

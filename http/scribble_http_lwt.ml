@@ -101,7 +101,7 @@ end
 
 type cohttp_server_hook = Cohttp.Request.t -> Cohttp_lwt.Body.t -> (Cohttp.Response.t * Cohttp_lwt.Body.t) option Lwt.t
 
-let http_acceptor ~base_path : cohttp_server Endpoint.acceptor * cohttp_server_hook =
+let http_acceptor ~base_path : cohttp_server acceptor * cohttp_server_hook =
   let open Lwt in
   let table = ActionTable.create () in
   let callback req body =
@@ -124,10 +124,11 @@ let http_acceptor ~base_path : cohttp_server Endpoint.acceptor * cohttp_server_h
        )};
        close=(fun () -> Lwt.return ())}
   in
-  (acceptor, callback)
+  (Internal.__create_acceptor acceptor, callback)
 
 
-let http_connector ~(base_url : string) () : cohttp_client Endpoint.connector =
+let http_connector ~(base_url : string) () : cohttp_client connector =
+  Internal.__create_connector @@
   fun () ->
   let open Lwt in
   Resolver_lwt.resolve_uri ~uri:(Uri.of_string base_url) Resolver_lwt_unix.system >>= fun endp ->

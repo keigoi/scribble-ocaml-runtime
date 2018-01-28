@@ -2,8 +2,8 @@ open Linocaml_lwt
 open Scribble_lwt
 open Scribble_http_lwt
 
-module Protocol =
-  OAuth.Make(Scribble_lwt)(struct type page = string end)
+module OAuth = OAuth.Make(Scribble_lwt)(struct type page = string end)
+open OAuth.C
 
 module Params = struct
   let oauth_start_url = "https://www.facebook.com/dialog/oauth"
@@ -99,25 +99,23 @@ module P = struct
 end
 
 
-type 'a ctx = <s : 'a>
-[@@deriving lens]
-[@@runner]
+type 'a ctx = <s : 'a> [@@deriving lens][@@runner]
 
 let oauth_consumer acceptor connector () =
-  let%lin #s = Protocol.C.initiate_C () in
+  let%lin #s = initiate_C () in
 
-  let%lin `oauth(_, #s) = s ^^ accept (U.role, U.receive_oauth) acceptor in
+  let%lin `oauth(_, #s) = s ^^ accept acceptor (U.role, U.receive_oauth) in
   let state = Printf.sprintf "%x" (Random.bits ())  in
   let%lin #s = s ^^ send (U.role, U._302_oauth_start, state) in
   let%lin #s = s ^^ disconnect U.role in
 
-  begin match%lin s ^^ accept_corr (U.role, U.receive_callback_success_or_callback_fail, state) acceptor with
+  begin match%lin s ^^ accept_corr acceptor (U.role, U.receive_callback_success_or_callback_fail, state) with
   | `callback_fail(_, #s) ->
      let%lin #s = s ^^ send (U.role, U._200, "Authentication failure") in
      s ^^ close
 
   | `callback_success(code, #s) ->
-     let%lin #s = s ^^ connect_corr (P.role, P.access_token, code, ()) connector in
+     let%lin #s = s ^^ connect_corr connector (P.role, P.access_token, code, ()) in
      let%lin `_200(accessToken,#s) = s ^^ receive (P.role, P.receive_200) in
      let%lin #s = s ^^ disconnect P.role in
      let%lin #s = s ^^ send (U.role, U._200, "OAuth successful. Accsss Token response:" ^ accessToken) in

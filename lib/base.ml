@@ -62,6 +62,10 @@ module type SESSION = sig
   type 'p sess_
   type 'p sess = 'p sess_ lin
 
+  type 'c connector
+  type 'c acceptor
+  val shmem : unit -> Raw.t connector * Raw.t acceptor
+
   type 'a Endpoint.conn_kind += Shmem : Raw.t Endpoint.conn_kind
 
   type ('roles, 'conn, 'labels) role = {_pack_role: 'conn * 'labels -> 'roles; _repr:string; _kind:'conn Endpoint.conn_kind}
@@ -85,23 +89,23 @@ module type SESSION = sig
         -> ([`send of 'roles] sess * 'q sess, empty, 'p sess) monad
 
   val connect :
-        ([>] as 'roles, 'conn, ([>] as 'labels)) role *  ('labels, 'conn, 'v data * 'p sess) label * 'v
-        -> 'conn Endpoint.connector
+        'conn connector
+        -> ([>] as 'roles, 'conn, ([>] as 'labels)) role *  ('labels, 'conn, 'v data * 'p sess) label * 'v
         -> ([`connect of 'roles] sess, empty, 'p sess) monad
 
   val accept :
-        ([>] as 'role, 'conn, ([>] as 'labels)) role * ('labels, 'conn) labels
-        -> 'conn Endpoint.acceptor
+        'conn acceptor
+        -> ([>] as 'role, 'conn, ([>] as 'labels)) role * ('labels, 'conn) labels
         -> ([`accept of 'role] sess, empty, 'labels lin) monad
 
   val connect_corr :
-        ([>] as 'roles, 'conn, ([>] as 'labels)) role *  ('labels, 'conn * 'corr, 'v data * 'p sess) label * 'corr * 'v
-        -> 'conn Endpoint.connector
+        'conn connector
+        -> ([>] as 'roles, 'conn, ([>] as 'labels)) role *  ('labels, 'conn * 'corr, 'v data * 'p sess) label * 'corr * 'v
         -> ([`connect of 'roles] sess, empty, 'p sess) monad
 
   val accept_corr :
-        ([>] as 'role, 'conn, ([>] as 'labels)) role * ('labels, 'conn * 'corr) labels * 'corr
-        -> 'conn Endpoint.acceptor
+        'conn acceptor
+        -> ([>] as 'role, 'conn, ([>] as 'labels)) role * ('labels, 'conn * 'corr) labels * 'corr
         -> ([`accept of 'role] sess, empty, 'labels lin) monad
 
   val disconnect :
@@ -110,6 +114,8 @@ module type SESSION = sig
 
   module Internal : sig
     val __initiate : myname:string -> ('x, 'x, 'p sess) monad
+    val __create_connector : 'c Endpoint.connector -> 'c connector
+    val __create_acceptor : 'c Endpoint.acceptor -> 'c acceptor
   end
 
 end

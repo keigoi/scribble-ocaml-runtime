@@ -3,5 +3,6 @@
 (executable
  ((name oauth_server)
   (preprocess (pps (lwt.ppx linocaml.ppx linocaml.ppx_lens)))
+  ; (preprocess (pps (linocaml.ppx)))
   (flags ("-g" "-short-paths"))
   (libraries (scribble.lwt scribble.http.lwt linocaml.lwt conduit-lwt-unix cohttp-lwt-unix uri sexplib cmdliner))))

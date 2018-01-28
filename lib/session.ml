@@ -22,6 +22,14 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
   type 'p sess_ = EP of Endpoint.t | Dummy
   type 'p sess = 'p sess_ lin
 
+  type 'c connector = 'c Endpoint.connector
+  type 'c acceptor = 'c Endpoint.acceptor
+
+  let shmem () =
+    let handle = Raw.create () in
+    (fun () -> IO.return {Endpoint.handle; close=(fun _ -> IO.return ())}),
+    (fun () -> IO.return {Endpoint.handle=Raw.reverse handle; close=(fun _ -> IO.return ())})
+
   type 'a Endpoint.conn_kind += Shmem : Raw.t Endpoint.conn_kind
 
   let unsess = function
@@ -90,9 +98,9 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
       end
 
   let connect :
-        (([>] as 'roles, 'conn, ([>] as 'labels)) role *  ('labels, 'conn, 'v data * 'p sess) label * 'v)
-        -> 'conn Endpoint.connector
-        -> ([`connect of 'roles] sess, empty, 'p sess) monad = fun (role, label, v) connector ->
+        'conn connector
+        -> (([>] as 'roles, 'conn, ([>] as 'labels)) role *  ('labels, 'conn, 'v data * 'p sess) label * 'v)
+        -> ([`connect of 'roles] sess, empty, 'p sess) monad = fun connector (role, label, v) ->
     LinIO.Internal.__monad begin fun s ->
       let s = unsess s in
       let open IO in
@@ -110,9 +118,9 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
     return (c, br)
 
   let accept :
-        ([>] as 'role, 'conn, ([>] as 'labels)) role * ('labels, 'conn) labels
-        -> 'conn E.acceptor
-        -> ([`accept of 'role] sess, empty, 'labels lin) monad = fun (role, labels) acceptor ->
+        'conn acceptor
+        -> ([>] as 'role, 'conn, ([>] as 'labels)) role * ('labels, 'conn) labels
+        -> ([`accept of 'role] sess, empty, 'labels lin) monad = fun acceptor (role, labels) ->
     LinIO.Internal.__monad begin fun s ->
         let s = unsess s in
         let open IO in
@@ -132,9 +140,9 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
       end
 
   let connect_corr :
-        ([>] as 'roles, 'conn, ([>] as 'labels)) role *  ('labels, 'conn * 'corr, 'v data * 'p sess) label * 'corr * 'v
-        -> 'conn Endpoint.connector
-        -> ([`connect of 'roles] sess, empty, 'p sess) monad = fun (role, label, corr, v) connector ->
+        'conn connector
+        -> ([>] as 'roles, 'conn, ([>] as 'labels)) role *  ('labels, 'conn * 'corr, 'v data * 'p sess) label * 'corr * 'v
+        -> ([`connect of 'roles] sess, empty, 'p sess) monad = fun connector (role, label, corr, v) ->
     LinIO.Internal.__monad begin fun s ->
       let s = unsess s in
       let open IO in
@@ -152,9 +160,9 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
     return (c, br)
 
   let accept_corr :
-        ([>] as 'role, 'conn, ([>] as 'labels)) role * ('labels, 'conn * 'corr) labels * 'corr
-        -> 'conn Endpoint.acceptor
-        -> ([`accept of 'role] sess, empty, 'labels lin) monad = fun (role, labels, corr) acceptor ->
+        'conn acceptor
+        -> ([>] as 'role, 'conn, ([>] as 'labels)) role * ('labels, 'conn * 'corr) labels * 'corr
+        -> ([`accept of 'role] sess, empty, 'labels lin) monad = fun acceptor (role, labels, corr) ->
     LinIO.Internal.__monad begin fun s ->
         let s = unsess s in
         let open IO in
@@ -171,5 +179,8 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
           let s = E.create ~myname in
           IO.return (pre, (Lin_Internal__ (EP s)))
         end
+
+    let __create_connector c = c
+    let __create_acceptor a = a
   end
 end

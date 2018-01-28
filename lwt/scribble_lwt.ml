@@ -59,8 +59,3 @@ module Tcp : Scribble.Base.TCP with module Endpoint = Endpoint and type stream =
          accept sock_listen >>= fun (sock_serv, _) ->
          return @@ make (sock_serv, sock_serv)))
 end
-
-let shmem () =
-  let handle = RawChan.create () in
-  (fun () -> {Endpoint.handle; close=(fun _ -> Lwt.return ())}),
-  (fun () -> {Endpoint.handle=RawChan.reverse handle; close=(fun _ -> Lwt.return ())})

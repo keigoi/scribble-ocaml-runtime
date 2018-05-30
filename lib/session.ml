@@ -2,12 +2,9 @@ open Linocaml.Base
 open Linocaml.Lens
 
 module Make(LinIO:Linocaml.Base.LIN_IO)
-           (Chan:Base.CHAN with type 'a io = 'a LinIO.IO.io)
-           (RawChan:Base.RAW_DCHAN with type 'a io = 'a LinIO.IO.io)
 : Base.SESSION with type 'a io = 'a LinIO.IO.io and type ('p,'q,'a) monad = ('p,'q,'a) LinIO.monad
 = struct
   module Endpoint = Endpoint.Make(LinIO.IO)
-  module Raw = RawChan
 
   module LinIO = LinIO
   module IO = LinIO.IO
@@ -24,13 +21,6 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
 
   type 'c connector = 'c Endpoint.connector
   type 'c acceptor = 'c Endpoint.acceptor
-
-  let shmem () =
-    let handle = Raw.create () in
-    (fun () -> IO.return {Endpoint.handle; close=(fun _ -> IO.return ())}),
-    (fun () -> IO.return {Endpoint.handle=Raw.reverse handle; close=(fun _ -> IO.return ())})
-
-  type 'a Endpoint.conn_kind += Shmem : Raw.t Endpoint.conn_kind
 
   let unsess = function
     | (Lin_Internal__ (EP s)) -> s

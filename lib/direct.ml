@@ -1,19 +1,4 @@
-module Chan = Channel.Make
-                (Linocaml.Direct.IO)
-                (struct
-                  type +'a io = 'a
-                  include Mutex
-                end)
-                (struct
-                  type +'a io = 'a
-                  type m = Mutex.t
-                  include Condition
-                end)
-
-include Session.Make
-          (Linocaml.Direct)
-          (Chan)
-          (Unsafe.Make_raw_dchan(Dchannel.Make(Chan)))
+include Session.Make(Linocaml.Direct)
 
 type stream_ = {in_:in_channel; out:out_channel}
 

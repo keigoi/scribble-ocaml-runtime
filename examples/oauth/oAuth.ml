@@ -98,19 +98,6 @@ module U = struct
       let receive_200  : type p0. ([`_200 of page data * p0], X.conn) labels =
         {_receive=X.read_200}
     end
-
-    module Shmem = struct
-      include Make(struct
-          type conn = Raw.t
-          let conn = Shmem
-          let write_oauth = Raw.send
-          let write_callback_success = Raw.send
-          let write_callback_fail = Raw.send
-          let read_302_oauth_start = Raw.receive
-          let read_200 = Raw.receive
-        end)
-        let connector, acceptor = shmem ()
-    end
   end
   module P = struct
     module Make(X:sig
@@ -132,18 +119,6 @@ module U = struct
         {_receive=X.read_200}
       let receive_302_success_or_302_fail  : type p0 p1. ([`_302_success of code data * p0|`_302_fail of unit data * p1], X.conn) labels =
         {_receive=X.read_302_success_or_302_fail}
-    end
-
-    module Shmem = struct
-      include Make(struct
-          type conn = Raw.t
-          let conn = Shmem
-          let write_authorize_request = Raw.send
-          let write_submit = Raw.send
-          let read_200 = Raw.receive
-          let read_302_success_or_302_fail = Raw.receive
-        end)
-        let connector, acceptor = shmem ()
     end
   end
 
@@ -174,18 +149,6 @@ module C = struct
       let receive_callback_success_or_callback_fail  : type p0 p1. ([`callback_success of code data * p0 sess|`callback_fail of unit data * p1 sess], X.conn) labels =
         {_receive=X.read_callback_success_or_callback_fail}
     end
-
-    module Shmem = struct
-      include Make(struct
-          type conn = Raw.t
-          let conn = Shmem
-          let write_302_oauth_start = Raw.send
-          let write_200 = Raw.send
-          let read_oauth = Raw.receive
-          let read_callback_success_or_callback_fail = Raw.receive
-        end)
-        let connector, acceptor = shmem ()
-    end
   end
   module P = struct
     module Make(X:sig
@@ -201,16 +164,6 @@ module C = struct
         {_pack_label=(fun payload -> `access_token(payload)); _send=X.write_access_token}
       let receive_200  : type p0. ([`_200 of accessToken data * p0 sess], X.conn) labels =
         {_receive=X.read_200}
-    end
-
-    module Shmem = struct
-      include Make(struct
-          type conn = Raw.t
-          let conn = Shmem
-          let write_access_token = Raw.send
-          let read_200 = Raw.receive
-        end)
-        let connector, acceptor = shmem ()
     end
   end
 
@@ -244,19 +197,6 @@ module P = struct
       let receive_submit  : type p0. ([`submit of (id * pass) data * p0], X.conn) labels =
         {_receive=X.read_submit}
     end
-
-    module Shmem = struct
-      include Make(struct
-          type conn = Raw.t
-          let conn = Shmem
-          let write_200 = Raw.send
-          let write_302_success = Raw.send
-          let write_302_fail = Raw.send
-          let read_authorize_request = Raw.receive
-          let read_submit = Raw.receive
-        end)
-        let connector, acceptor = shmem ()
-    end
   end
   module C = struct
     module Make(X:sig
@@ -272,16 +212,6 @@ module P = struct
         {_pack_label=(fun payload -> `_200(payload)); _send=X.write_200}
       let receive_access_token  : type p0. ([`access_token of unit data * p0], X.conn) labels =
         {_receive=X.read_access_token}
-    end
-
-    module Shmem = struct
-      include Make(struct
-          type conn = Raw.t
-          let conn = Shmem
-          let write_200 = Raw.send
-          let read_access_token = Raw.receive
-        end)
-        let connector, acceptor = shmem ()
     end
   end
 

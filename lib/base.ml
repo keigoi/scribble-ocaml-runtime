@@ -54,7 +54,6 @@ module type SESSION = sig
   type ('p,'q,'a) monad
 
   module Endpoint : ENDPOINT with type 'a io = 'a io
-  module Raw : RAW_DCHAN with type 'a io = 'a io
 
   type 'a lin = 'a Linocaml.Base.lin
   type 'a data = 'a Linocaml.Base.data
@@ -64,9 +63,6 @@ module type SESSION = sig
 
   type 'c connector
   type 'c acceptor
-  val shmem : unit -> Raw.t connector * Raw.t acceptor
-
-  type 'a Endpoint.conn_kind += Shmem : Raw.t Endpoint.conn_kind
 
   type ('roles, 'conn, 'labels) role = {_pack_role: 'conn * 'labels -> 'roles; _repr:string; _kind:'conn Endpoint.conn_kind}
   type ('labels, 'conn, 'payloads) label = {_pack_label: 'payloads -> 'labels; _send:'conn -> 'labels -> unit io}

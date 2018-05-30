@@ -158,9 +158,9 @@ module C = struct
         type conn
         val conn : conn Endpoint.conn_kind
         val write_302_oauth_start : conn -> [>`_302_oauth_start of state data * 'p sess] -> unit io
-        val write_200 : conn -> [>`_200 of page data * 'p sess] -> unit io
-        val read_oauth : conn -> [`oauth of unit data * 'p0] io
-        val read_callback_success_or_callback_fail : conn -> [`callback_success of code data * 'p0|`callback_fail of unit data * 'p1] io
+        val write_200 : conn -> [`_200 of page data * 'p sess] -> unit io
+        val read_oauth : conn -> [`oauth of unit data * 'p0 sess] io
+        val read_callback_success_or_callback_fail : conn -> [`callback_success of code data * 'p0 sess|`callback_fail of unit data * 'p1 sess] io
       end) = struct
       let role : ([>`U of X.conn * 'lab], X.conn, 'lab) role =
         {_pack_role=(fun labels -> `U(labels)) ; _repr="role_U"; _kind=X.conn}
@@ -169,9 +169,9 @@ module C = struct
         {_pack_label=(fun payload -> `_302_oauth_start(payload)); _send=X.write_302_oauth_start}
       let _200 : 'p. ([>`_200 of page data * 'p sess], X.conn, page data * 'p sess) label =
         {_pack_label=(fun payload -> `_200(payload)); _send=X.write_200}
-      let receive_oauth  : type p0. ([`oauth of unit data * p0], X.conn) labels =
+      let receive_oauth  : type p0. ([`oauth of unit data * p0 sess], X.conn) labels =
         {_receive=X.read_oauth}
-      let receive_callback_success_or_callback_fail  : type p0 p1. ([`callback_success of code data * p0|`callback_fail of unit data * p1], X.conn) labels =
+      let receive_callback_success_or_callback_fail  : type p0 p1. ([`callback_success of code data * p0 sess|`callback_fail of unit data * p1 sess], X.conn) labels =
         {_receive=X.read_callback_success_or_callback_fail}
     end
 
@@ -192,14 +192,14 @@ module C = struct
         type conn
         val conn : conn Endpoint.conn_kind
         val write_access_token : conn -> [>`access_token of unit data * 'p sess] -> unit io
-        val read_200 : conn -> [`_200 of accessToken data * 'p0] io
+        val read_200 : conn -> [`_200 of accessToken data * 'p0 sess] io
       end) = struct
       let role : ([>`P of X.conn * 'lab], X.conn, 'lab) role =
         {_pack_role=(fun labels -> `P(labels)) ; _repr="role_P"; _kind=X.conn}
 
       let access_token : 'p. ([>`access_token of unit data * 'p sess], X.conn, unit data * 'p sess) label =
         {_pack_label=(fun payload -> `access_token(payload)); _send=X.write_access_token}
-      let receive_200  : type p0. ([`_200 of accessToken data * p0], X.conn) labels =
+      let receive_200  : type p0. ([`_200 of accessToken data * p0 sess], X.conn) labels =
         {_receive=X.read_200}
     end
 

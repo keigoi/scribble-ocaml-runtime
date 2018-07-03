@@ -21,14 +21,16 @@ module type CONDITION = sig
   val wait : t -> m -> unit io
 end
 
-module Make(IO:IO)(M:MUTEX with type 'a io = 'a IO.io)(C:CONDITION with type 'a io = 'a IO.io and type m = M.t)
-       : sig
-  type +'a io = 'a IO.io
+module type S = sig
+  type +'a io
   type 'a t
   val create : unit -> 'a t
-  val send : 'a t -> 'a -> unit IO.io
-  val receive : 'a t -> 'a IO.io
+  val send : 'a t -> 'a -> unit io
+  val receive : 'a t -> 'a io
 end
+
+module Make(IO:IO)(M:MUTEX with type 'a io = 'a IO.io)(C:CONDITION with type 'a io = 'a IO.io and type m = M.t)
+       : S with type 'a io = 'a IO.io
   = struct
   open IO
   module Q = Queue

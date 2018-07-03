@@ -123,3 +123,13 @@ module type TCP = sig
   val connector : host:string -> port:int -> stream Endpoint.connector
   val new_domain_channel : unit -> (stream Endpoint.connector * stream Endpoint.acceptor) Endpoint.io
  end
+
+module type RAW_MCHAN = sig
+  module Endpoint : ENDPOINT
+  type t
+  type raw
+  type _ Endpoint.conn_kind += Raw : raw Endpoint.conn_kind
+  val create : acceptor_role:string -> connector_roles:string list -> t
+  val accept : t -> Endpoint.t Endpoint.io
+  val connect : t -> role:string -> Endpoint.t Endpoint.io
+end

@@ -2,6 +2,22 @@ include Session.Make(Linocaml.Direct)
 
 type stream_ = {in_:in_channel; out:out_channel}
 
+module Mutex = struct
+  include Mutex
+  type 'a io = 'a
+end
+
+module Condition = struct
+  include Condition
+  type 'a io = 'a
+  type m = Mutex.t
+end
+
+module Channel = Channel.Make(Linocaml.Direct.IO)(Mutex)(Condition)
+module DChannel = Dchannel.Make(Channel)
+module Raw = Unsafe.Make_raw_dchan(DChannel)
+module MChannel = Mchannel.Make(Linocaml.Direct.IO)(Channel)(Mutex)(Condition)(Raw)(Endpoint)
+
 module Tcp : Base.TCP with module Endpoint = Endpoint and type stream = stream_ = struct
   module Endpoint = Endpoint
   type stream = stream_  = {in_:in_channel; out:out_channel}

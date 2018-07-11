@@ -1,3 +1,25 @@
+module type IO = sig
+  type +'a io
+  val return : 'a -> 'a io
+  val (>>=) : 'a io -> ('a -> 'b io) -> 'b io
+end
+
+module type MUTEX = sig
+  type +'a io
+  type t
+  val create : unit -> t
+  val lock : t -> unit io
+  val unlock : t -> unit
+end
+
+module type CONDITION = sig
+  type +'a io
+  type m
+  type t
+  val create : unit -> t
+  val signal : t -> unit
+  val wait : t -> m -> unit io
+end
 module type CHAN = sig
   type +'a io
   type 'a t
@@ -11,7 +33,7 @@ module type DCHAN = sig
   val reverse : 'a t -> 'a t
 end
 
-module type RAW_DCHAN = sig
+module type RAW = sig
   type +'a io
   type t
   val create : unit -> t
@@ -53,7 +75,11 @@ module type SESSION = sig
   type +'a io
   type ('p,'q,'a) monad
 
+  module IO : IO with type 'a io = 'a io
+  module LinIO : Linocaml.Base.LIN_IO with module IO = IO with type ('p,'q,'a) monad = ('p,'q,'a) monad
   module Endpoint : ENDPOINT with type 'a io = 'a io
+  module Mutex : MUTEX with type 'a io = 'a io
+  module Condition : CONDITION with type 'a io = 'a io with type m = Mutex.t
 
   type 'a lin = 'a Linocaml.Base.lin
   type 'a data = 'a Linocaml.Base.data
@@ -110,10 +136,21 @@ module type SESSION = sig
 
   module Internal : sig
     val __initiate : myname:string -> ('x, 'x, 'p sess) monad
+    val __start : Endpoint.t io -> ('x, 'x, 'p sess) monad
     val __create_connector : 'c Endpoint.connector -> 'c connector
     val __create_acceptor : 'c Endpoint.acceptor -> 'c acceptor
   end
 
+end
+
+module type SHMEM_ENDPOINT = sig
+  module Endpoint : ENDPOINT
+  type t
+  type raw
+  type _ Endpoint.conn_kind += Raw : raw Endpoint.conn_kind
+  val create : acceptor_role:string -> connector_roles:string list -> t
+  val accept : t -> role:string -> Endpoint.t Endpoint.io
+  val connect : t -> role:string -> Endpoint.t Endpoint.io
 end
 
 module type TCP = sig
@@ -122,14 +159,4 @@ module type TCP = sig
   type _ Endpoint.conn_kind += Stream : stream Endpoint.conn_kind
   val connector : host:string -> port:int -> stream Endpoint.connector
   val new_domain_channel : unit -> (stream Endpoint.connector * stream Endpoint.acceptor) Endpoint.io
- end
-
-module type RAW_MCHAN = sig
-  module Endpoint : ENDPOINT
-  type t
-  type raw
-  type _ Endpoint.conn_kind += Raw : raw Endpoint.conn_kind
-  val create : acceptor_role:string -> connector_roles:string list -> t
-  val accept : t -> Endpoint.t Endpoint.io
-  val connect : t -> role:string -> Endpoint.t Endpoint.io
 end

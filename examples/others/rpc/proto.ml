@@ -8,13 +8,13 @@ module Make (Session:Scribble.S.SESSION)  = struct
 
 open Session
 
-type ('c_S1, 'c_S2, 'c_S3) rPCComp2_C = ('c_S1, 'c_S2, 'c_S3) rPCComp2_C_1
-and ('c_S1, 'c_S2, 'c_S3) rPCComp2_C_1 =
+type ('c_S1, 'c_S2, 'c_S3) proto_C = ('c_S1, 'c_S2, 'c_S3) proto_C_1
+and ('c_S1, 'c_S2, 'c_S3) proto_C_1 =
   [`send of [`S1 of 'c_S1 * [`_1 of unit data *
     [`recv of [`S1 of 'c_S1 * [`_1a of unit data *
       [`close] sess]]] sess]]]
-type ('c_C, 'c_S2, 'c_S3) rPCComp2_S1 = ('c_C, 'c_S2, 'c_S3) rPCComp2_S1_1
-and ('c_C, 'c_S2, 'c_S3) rPCComp2_S1_1 =
+type ('c_C, 'c_S2, 'c_S3) proto_S1 = ('c_C, 'c_S2, 'c_S3) proto_S1_1
+and ('c_C, 'c_S2, 'c_S3) proto_S1_1 =
   [`recv of [`C of 'c_C * [`_1 of unit data *
     [`send of [`S2 of 'c_S2 * [`_2 of unit data *
       [`recv of [`S2 of 'c_S2 * [`_2a of unit data *
@@ -22,13 +22,13 @@ and ('c_C, 'c_S2, 'c_S3) rPCComp2_S1_1 =
           [`recv of [`S3 of 'c_S3 * [`_3a of unit data *
             [`send of [`C of 'c_C * [`_1a of unit data *
               [`close] sess]]] sess]]] sess]]] sess]]] sess]]] sess]]]
-type ('c_C, 'c_S1, 'c_S3) rPCComp2_S2 = ('c_C, 'c_S1, 'c_S3) rPCComp2_S2_1
-and ('c_C, 'c_S1, 'c_S3) rPCComp2_S2_1 =
+type ('c_C, 'c_S1, 'c_S3) proto_S2 = ('c_C, 'c_S1, 'c_S3) proto_S2_1
+and ('c_C, 'c_S1, 'c_S3) proto_S2_1 =
   [`recv of [`S1 of 'c_S1 * [`_2 of unit data *
     [`send of [`S1 of 'c_S1 * [`_2a of unit data *
       [`close] sess]]] sess]]]
-type ('c_C, 'c_S1, 'c_S2) rPCComp2_S3 = ('c_C, 'c_S1, 'c_S2) rPCComp2_S3_1
-and ('c_C, 'c_S1, 'c_S2) rPCComp2_S3_1 =
+type ('c_C, 'c_S1, 'c_S2) proto_S3 = ('c_C, 'c_S1, 'c_S2) proto_S3_1
+and ('c_C, 'c_S1, 'c_S2) proto_S3_1 =
   [`recv of [`S1 of 'c_S1 * [`_3 of unit data *
     [`send of [`S1 of 'c_S1 * [`_3a of unit data *
       [`close] sess]]] sess]]]
@@ -36,13 +36,13 @@ and ('c_C, 'c_S1, 'c_S2) rPCComp2_S3_1 =
 
 module Shmem = Scribble.Shmem.Make(Session.LinIO.IO)(Session.Mutex)(Session.Condition)(Session.Endpoint)
 
-type rPCComp2 = ShmemMPSTChanenl__ of Shmem.MPSTChannel.t
-let create_shmem_channel : unit -> rPCComp2 = fun () ->
+type proto = ShmemMPSTChanenl__ of Shmem.MPSTChannel.t
+let create_shmem_channel : unit -> proto = fun () ->
   ShmemMPSTChanenl__(Shmem.MPSTChannel.create ~acceptor_role:"role_C" ~connector_roles:["role_S1";; "role_S2"; "role_S3"])
 
 
 module C = struct
-  let initiate_shmem : 'c. rPCComp2 -> ('c, 'c, Shmem.Raw.t rPCComp2_C sess) monad = fun (ShmemMPSTChanenl__(c)) ->
+  let initiate_shmem : 'c. proto -> ('c, 'c, Shmem.Raw.t proto_C sess) monad = fun (ShmemMPSTChanenl__(c)) ->
     Internal.__start (Shmem.MPSTChannel.accept c ~role:"role_C")
 
   module S1 = struct
@@ -111,7 +111,7 @@ module C = struct
 end
 
 module S1 = struct
-  let initiate_shmem : 'c. rPCComp2 -> ('c, 'c, Shmem.Raw.t rPCComp2_S1 sess) monad = fun (ShmemMPSTChanenl__(c)) ->
+  let initiate_shmem : 'c. proto -> ('c, 'c, Shmem.Raw.t proto_S1 sess) monad = fun (ShmemMPSTChanenl__(c)) ->
     Internal.__start (Shmem.MPSTChannel.connect c ~role:"role_S1")
 
   module C = struct
@@ -196,7 +196,7 @@ module S1 = struct
 end
 
 module S2 = struct
-  let initiate_shmem : 'c. rPCComp2 -> ('c, 'c, Shmem.Raw.t rPCComp2_S2 sess) monad = fun (ShmemMPSTChanenl__(c)) ->
+  let initiate_shmem : 'c. proto -> ('c, 'c, Shmem.Raw.t proto_S2 sess) monad = fun (ShmemMPSTChanenl__(c)) ->
     Internal.__start (Shmem.MPSTChannel.connect c ~role:"role_S2")
 
   module C = struct
@@ -265,7 +265,7 @@ module S2 = struct
 end
 
 module S3 = struct
-  let initiate_shmem : 'c. rPCComp2 -> ('c, 'c, Shmem.Raw.t rPCComp2_S3 sess) monad = fun (ShmemMPSTChanenl__(c)) ->
+  let initiate_shmem : 'c. proto -> ('c, 'c, Shmem.Raw.t proto_S3 sess) monad = fun (ShmemMPSTChanenl__(c)) ->
     Internal.__start (Shmem.MPSTChannel.connect c ~role:"role_S3")
 
   module C = struct

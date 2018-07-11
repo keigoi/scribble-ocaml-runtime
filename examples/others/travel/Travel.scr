@@ -1,35 +1,26 @@
-//$ ./scribblec.sh -ip scribble-demos/scrib/travel/src -d scribble-demos/scrib/travel/src scribble-demos/scrib/travel/src/travel/Travel.scr -api Booking C
-//$ javadoc -cp scribble-core/target/classes:scribble-runtime/target/classes:scribble-demos/scrib/travel/src scribble-demos/scrib/travel/src/travel/*.java -subpackages travel.Travel.Booking -d scribble-demos/scrib/travel/javadoc
-
 module travel.Travel;
 
-type <java> "java.lang.Integer" from "rt.jar" as Int;
-type <java> "java.lang.String" from "rt.jar" as String;
+type <ocaml> "int" from "stdlib" as Int;
+type <ocaml> "string" from "stdlib" as String;
+type <ocaml> "string" from "stdlib" as Date;
 
-
-global protocol Travel(role C, role A, role S)
-{
-	choice at C
-	{
-		Query(String) from C to A;
-		Quote(Int) from A to C;
-		Dummy() from A to S;   // Dummy
-		do Travel(C, A, S);
-	}
-	or
-	{
-		choice at C
-		{
-			Yes() from C to A;
-			Yes() from A to S;
-			Payment(String,Time) from C to S;
-			Ack() from S to C;
-		}
-		or
-		{
-			No() from C to A;
-			No() from A to S;
-		}
-		Bye() from C to A;
-	}
+global protocol TravelAgency(role C, role A, role S) {
+  rec LOOP {
+    choice at C {
+      Query(String) from C to A;
+      Price(Int) from A to C;
+      Info(String) from A to S;
+      continue LOOP;
+    } or {
+      choice at C {
+        Accept() from C to A;
+        Accept() from A to S;
+        Address(String) from C to S;
+        (Date) from S to C;
+      } or {
+        Reject() from C to A;
+        Reject() from A to S;
+      }
+    }
+  }
 }

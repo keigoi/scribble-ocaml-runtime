@@ -1,10 +1,12 @@
 open Linocaml.Base
 open Linocaml.Lens
 
-module Make(LinIO:Linocaml.Base.LIN_IO)
-: Base.SESSION with type 'a io = 'a LinIO.IO.io and type ('p,'q,'a) monad = ('p,'q,'a) LinIO.monad
+module Make(LinIO:Linocaml.Base.LIN_IO)(Mutex:S.MUTEX with type 'a io = 'a LinIO.IO.io)(Cond:S.CONDITION with type 'a io = 'a LinIO.IO.io with type m = Mutex.t)
+: S.SESSION with type 'a io = 'a LinIO.IO.io and type ('p,'q,'a) monad = ('p,'q,'a) LinIO.monad
 = struct
   module Endpoint = Endpoint.Make(LinIO.IO)
+  module Mutex = Mutex
+  module Condition = Cond
 
   module LinIO = LinIO
   module IO = LinIO.IO
@@ -168,6 +170,13 @@ module Make(LinIO:Linocaml.Base.LIN_IO)
           fun pre ->
           let s = E.create ~myname in
           IO.return (pre, (Lin_Internal__ (EP s)))
+        end
+
+    let __start : Endpoint.t io -> ('c, 'c, 'p sess) LinIO.monad
+      = fun m ->
+      LinIO.Internal.__monad begin
+          let open IO in
+          fun pre -> m >>= fun t -> IO.return (pre, (Lin_Internal__ (EP t)))
         end
 
     let __create_connector c = c

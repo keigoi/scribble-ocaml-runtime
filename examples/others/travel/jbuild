@@ -1,0 +1,8 @@
+(jbuild_version 1)
+
+(executable
+ ((name travel_example)
+  (public_name travel_example)
+  (preprocess (pps (linocaml.ppx linocaml.ppx_lens)))
+  (flags ("-g" "-short-paths"))
+  (libraries (scribble.lwt linocaml.lwt uri sexplib cmdliner))))

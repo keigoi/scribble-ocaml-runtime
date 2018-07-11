@@ -38,14 +38,3 @@ let replace_sess_part : 'a -> 'b -> 'a = fun var new_sess ->
     let (msg,_) = Obj.obj old_payload in
     let new_payload = Obj.repr (msg,new_sess) in
     Obj.obj (replace_payload var new_payload)
-
-module Make_raw_dchan(M:Base.DCHAN)
-       : Base.RAW_DCHAN with type 'a io = 'a M.io
-  = struct
-  type +'a io = 'a M.io
-  type t = unit M.t
-  let create = M.create
-  let send c v = M.send c (Obj.magic v)
-  let receive c = Obj.magic (M.receive c)
-  let reverse c = M.reverse c
-end

@@ -1,6 +1,6 @@
 
 module Make(IO:Linocaml.Base.IO)
-: Base.ENDPOINT with type 'a io = 'a IO.io
+: S.ENDPOINT with type 'a io = 'a IO.io
 = struct
   type +'a io = 'a IO.io
 

@@ -1,0 +1,23 @@
+// from Kouzapas, D., Dardha, O., Perera, R. and Gay, S.; Typechecking protocols with Mungo and StMungo: A session type toolchain for Java, Science of Programming, 2018.
+module travel.BuyTicket;
+
+type <ocaml> "string" from "stdlib" as Travel;
+type <ocaml> "int" from "stdlib" as Price;
+type <ocaml> "string" from "stdlib" as Code;
+type <ocaml> "string" from "stdlib" as String;
+
+global protocol BuyTicket(role R, role A, role F){
+  request(Travel) from R to A;
+  quote(Price) from A to R;
+  check(Price) from R to F;
+  choice at F {
+    approve(Code) from F to R;
+    approve(Code) from F to A;
+    ticket(String) from A to R;
+    invoice(Code) from A to F;
+    payment(Price) from F to A;
+  } or {
+    refuse(String) from F to R;
+    refuse(String) from F to A;
+  }
+}

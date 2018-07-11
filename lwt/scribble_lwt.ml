@@ -1,8 +1,24 @@
-include Scribble.Session.Make(Linocaml_lwt)
+module M = struct
+  include Lwt_mutex
+  type 'a io = 'a Lwt.t
+end
+
+module C = struct
+  type 'a io = 'a Lwt.t
+  type m = Lwt_mutex.t
+  type t = unit Lwt_condition.t
+  let create ()  = Lwt_condition.create ()
+  let signal c = Lwt_condition.signal c ()
+  let wait c m = Lwt_condition.wait ~mutex:m c
+end
+
+include Scribble.Session.Make(Linocaml_lwt)(M)(C)
+
+module Shmem = Scribble.Shmem.Make(Linocaml_lwt.IO)(Mutex)(Condition)(Endpoint)
 
 type stream_ = {in_:Lwt_io.input_channel; out:Lwt_io.output_channel}
 
-module Tcp : Scribble.Base.TCP with module Endpoint = Endpoint and type stream = stream_
+module Tcp : Scribble.S.TCP with module Endpoint = Endpoint and type stream = stream_
   = struct
   module Endpoint = Endpoint
 

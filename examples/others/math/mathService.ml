@@ -1,53 +1,136 @@
 (* Generated from scribble-ocaml https://github.com/keigoi/scribble-ocaml
  * This code should be compiled with scribble-ocaml-runtime
  * https://github.com/keigoi/scribble-ocaml-runtime *)
-open Multiparty
-type mathService
 
-type mathService_C = mathService_C_1
-and mathService_C_1 = 
-  [`send of
-    [`Val of [`S] role * int data *
-      [`send of
-        [`Add of [`S] role * int data *
-          [`recv of [`S] role * [`Sum of int data *
-            mathService_C_1 sess]] sess
-        |`Mult of [`S] role * int data *
-          [`recv of [`S] role * [`Prod of int data *
-            mathService_C_1 sess]] sess]] sess
-    |`Bye of [`S] role * unit data *
-      [`close] sess]]
-type mathService_S = mathService_S_1
-and mathService_S_1 = 
-  [`recv of [`C] role *
+
+module Make (Session:Scribble.S.SESSION)  = struct
+  type int = java.lang.Integer
+
+open Session
+
+type ('c_S) mathService_C = ('c_S) mathService_C_1
+and ('c_S) mathService_C_1 =
+  [`send of [`S of 'c_S *
     [`Val of int data *
-      [`recv of [`C] role *
+      [`send of [`S of 'c_S *
         [`Add of int data *
-          [`send of
-            [`Sum of [`C] role * int data *
-              mathService_S_1 sess]] sess
+          [`recv of [`S of 'c_S * [`Sum of int data *
+            ('c_S) mathService_C_1 sess]]] sess
         |`Mult of int data *
-          [`send of
-            [`Prod of [`C] role * int data *
-              mathService_S_1 sess]] sess]] sess
+          [`recv of [`S of 'c_S * [`Prod of int data *
+            ('c_S) mathService_C_1 sess]]] sess]]] sess
     |`Bye of unit data *
-      [`close] sess]]
+      [`close] sess]]]
+type ('c_C) mathService_S = ('c_C) mathService_S_1
+and ('c_C) mathService_S_1 =
+  [`recv of [`C of 'c_C *
+    [`Val of int data *
+      [`recv of [`C of 'c_C *
+        [`Add of int data *
+          [`send of [`C of 'c_C * [`Sum of int data *
+            ('c_C) mathService_S_1 sess]]] sess
+        |`Mult of int data *
+          [`send of [`C of 'c_C * [`Prod of int data *
+            ('c_C) mathService_S_1 sess]]] sess]]] sess
+    |`Bye of unit data *
+      [`close] sess]]]
 
-let role_C : [`C] role = Internal.__mkrole "role_C"
-let role_S : [`S] role = Internal.__mkrole "role_S"
 
-let accept_C : 'pre 'post. (mathService,[`Implicit]) channel -> ('c, 'c, mathService_C sess) monad =
-  fun ch ->
-  Internal.__accept ~myname:"role_C" ~cli_count:1 ch
+module Shmem = Scribble.Shmem.Make(Session.LinIO.IO)(Session.Mutex)(Session.Condition)(Session.Endpoint)
 
-let connect_S : 'pre 'post. (mathService,[`Implicit]) channel -> ('c, 'c, mathService_S sess) monad =
-  fun ch ->
-  Internal.__connect ~myname:"role_S" ch
+type mathService = ShmemMPSTChanenl__ of Shmem.MPSTChannel.t
+let create_shmem_channel : unit -> mathService = fun () ->
+  ShmemMPSTChanenl__(Shmem.MPSTChannel.create ~acceptor_role:"role_C" ~connector_roles:["role_S";])
 
-let new_channel_mathService : unit -> (mathService,[`Implicit]) channel = new_channel
-let msg_Add = {_pack=(fun a -> `Add(a))}
-let msg_Bye = {_pack=(fun a -> `Bye(a))}
-let msg_Mult = {_pack=(fun a -> `Mult(a))}
-let msg_Prod = {_pack=(fun a -> `Prod(a))}
-let msg_Sum = {_pack=(fun a -> `Sum(a))}
-let msg_Val = {_pack=(fun a -> `Val(a))}
+
+module C = struct
+  let initiate_shmem : 'c. mathService -> ('c, 'c, Shmem.Raw.t mathService_C sess) monad = fun (ShmemMPSTChanenl__(c)) ->
+    Internal.__start (Shmem.MPSTChannel.accept c ~role:"role_C")
+
+  module S = struct
+    module Make(X:sig
+        type conn
+        val conn : conn Endpoint.conn_kind
+        val write_val : conn -> [>`Val of int data * 'p sess] -> unit io
+        val write_bye : conn -> [>`Bye of unit data * 'p sess] -> unit io
+        val write_add : conn -> [>`Add of int data * 'p sess] -> unit io
+        val write_mult : conn -> [>`Mult of int data * 'p sess] -> unit io
+        val read_sum : conn -> [`Sum of int data * 'p0] io
+        val read_prod : conn -> [`Prod of int data * 'p0] io
+      end) = struct
+      type conn = X.conn
+      let role : ([>`S of X.conn * 'lab], X.conn, 'lab) role =
+        {_pack_role=(fun labels -> `S(labels)) ; _repr="role_S"; _kind=X.conn}
+
+      let val : 'p. ([>`Val of int data * 'p sess], X.conn, int data * 'p sess) label =
+        {_pack_label=(fun payload -> `Val(payload)); _send=X.write_val}
+      let bye : 'p. ([>`Bye of unit data * 'p sess], X.conn, unit data * 'p sess) label =
+        {_pack_label=(fun payload -> `Bye(payload)); _send=X.write_bye}
+      let add : 'p. ([>`Add of int data * 'p sess], X.conn, int data * 'p sess) label =
+        {_pack_label=(fun payload -> `Add(payload)); _send=X.write_add}
+      let mult : 'p. ([>`Mult of int data * 'p sess], X.conn, int data * 'p sess) label =
+        {_pack_label=(fun payload -> `Mult(payload)); _send=X.write_mult}
+      let receive_sum  : type p0. ([`Sum of int data * p0], X.conn) labels =
+        {_receive=X.read_sum}
+      let receive_prod  : type p0. ([`Prod of int data * p0], X.conn) labels =
+        {_receive=X.read_prod}
+    end
+
+    module Raw = struct
+      include Make(struct
+          type conn = Shmem.Raw.t
+          let conn = Shmem.MPSTChannel.Raw
+          let write_val = Shmem.Raw.send
+          let write_bye = Shmem.Raw.send
+          let write_add = Shmem.Raw.send
+          let write_mult = Shmem.Raw.send
+          let read_sum = Shmem.Raw.receive
+          let read_prod = Shmem.Raw.receive
+        end)
+    end
+  end
+
+end
+
+module S = struct
+  let initiate_shmem : 'c. mathService -> ('c, 'c, Shmem.Raw.t mathService_S sess) monad = fun (ShmemMPSTChanenl__(c)) ->
+    Internal.__start (Shmem.MPSTChannel.connect c ~role:"role_S")
+
+  module C = struct
+    module Make(X:sig
+        type conn
+        val conn : conn Endpoint.conn_kind
+        val write_sum : conn -> [>`Sum of int data * 'p sess] -> unit io
+        val write_prod : conn -> [>`Prod of int data * 'p sess] -> unit io
+        val read_val_or_bye : conn -> [`Val of int data * 'p0|`Bye of unit data * 'p1] io
+        val read_add_or_mult : conn -> [`Add of int data * 'p0|`Mult of int data * 'p1] io
+      end) = struct
+      type conn = X.conn
+      let role : ([>`C of X.conn * 'lab], X.conn, 'lab) role =
+        {_pack_role=(fun labels -> `C(labels)) ; _repr="role_C"; _kind=X.conn}
+
+      let sum : 'p. ([>`Sum of int data * 'p sess], X.conn, int data * 'p sess) label =
+        {_pack_label=(fun payload -> `Sum(payload)); _send=X.write_sum}
+      let prod : 'p. ([>`Prod of int data * 'p sess], X.conn, int data * 'p sess) label =
+        {_pack_label=(fun payload -> `Prod(payload)); _send=X.write_prod}
+      let receive_val_or_bye  : type p0 p1. ([`Val of int data * p0|`Bye of unit data * p1], X.conn) labels =
+        {_receive=X.read_val_or_bye}
+      let receive_add_or_mult  : type p0 p1. ([`Add of int data * p0|`Mult of int data * p1], X.conn) labels =
+        {_receive=X.read_add_or_mult}
+    end
+
+    module Raw = struct
+      include Make(struct
+          type conn = Shmem.Raw.t
+          let conn = Shmem.MPSTChannel.Raw
+          let write_sum = Shmem.Raw.send
+          let write_prod = Shmem.Raw.send
+          let read_val_or_bye = Shmem.Raw.receive
+          let read_add_or_mult = Shmem.Raw.receive
+        end)
+    end
+  end
+
+end
+
+end

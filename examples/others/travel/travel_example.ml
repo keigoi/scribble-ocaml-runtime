@@ -1,90 +1,85 @@
-open Linocaml_lwt
-open Scribble_lwt
-    
-(* declare a single slot 's' *)
-type 'a ctx = <s : 'a>
-[@@deriving lens]
-[@@runner]
+open Linocaml.Direct
+open Scribble.Direct
 
-let ch = Travel.new_channel_travel ()
-       
-open Travel
+module TravelAgency = TravelAgency.Make(Scribble.Direct)
 
-let booking_agent () =
-  (* bind an agent's session to the slot s *)
-  let%lin #s = connect_A ch in
+let book_ch = TravelAgency.create_shmem_channel ()
 
-  let rec loop state () =
-    match%lin receive s role_C with
-    | `Query((query:string data),#s) -> begin
-        
-        let quote = 70 in
-        send s role_C msg_Quote quote >>
-        send s role_S msg_Dummy () >>=
-        loop (Some (query,quote))
-      end
-    | `Yes(_,#s) -> send s role_S msg_Yes ()
-    | `No(_,#s) -> send s role_S msg_No ()
+let () =
+  let module S = TravelAgency.S in
+  let module C = S.C.Raw in
+  let module A = S.A.Raw in
+  let _ : Thread.t =
+    Thread.create
+      (run (fun () ->
+           S.initiate_shmem book_ch >>= fun%lin #o ->
+           let rec loop () =
+             match%lin receive (A.role, A.receive_info_or_aCCEPT_or_rEJECT) with
+             | `info(info, #o) ->
+                Printf.printf "server: received a piece of information from Agency: %s\n" info;
+                loop ()
+             | `ACCEPT(_, #o) ->
+                Printf.printf "server: received ACCEPT from Agency\n";
+                receive (C.role, C.receive_address) >>= fun%lin (`Address(address, #o)) ->
+                Printf.printf "server: received Client address: %s\n" address;
+                send (C.role, C.msg, "Transaction copmleted.") >>= fun%lin #o ->
+                close
+             | `REJECT(info, #o) ->
+                close
+           in
+           loop () >>
+           (Printf.printf "server: finished.\n";
+           return ())
+
+      )) ()
   in
-  loop None ()
-  >>
-  let%lin `Bye(_,#s) = receive s role_C in
-  close s
-
-let booking_client () =
-  let%lin #s = accept_C ch in
-  
-  send s role_A msg_Query "from London to Paris, 10th July 2017" >>
-
-  let%lin `Quote(price,#s) = receive s role_A in
-  (Printf.printf "client: price received: %d\n" price; return ()) >>
-
-  begin
-    if price < 100 then
-      begin
-        send s role_A msg_Yes () >>
-        send s role_S msg_Payment "123-4567, Nishi-ku, Nagoya, Japan" >>
-
-        let%lin `Ack(_,#s) = receive s role_S in
-        return ()
-      end
-    else begin
-      send s role_A msg_No ()
-    end
-  end >>
-  send s role_A msg_Bye () >>
-  close s
-      
-
-let booking_server () =
-  let%lin #s = connect_S ch in
-
-  let rec loop () =
-    match%lin receive s role_A with
-    | `Dummy(_,#s) -> loop ()
-    | `Yes(_,#s) -> begin
-        let%lin `Payment(address,#s) = receive s role_C in
-         send s role_C msg_Ack ()
-      end
-    | `No(_,#s) -> return ()
-  in
-  loop () >>
-  close s
-
-open Lwt
-let fork name f () =
-  (* Thread.create (fun () -> print_endline (name ^ ": started."); f (); print_endline (name ^ ": finished.")) () *)
-  print_endline (name ^ ": started."); f () >>=  fun _ -> (print_endline (name ^ ": finished."); Lwt.return_unit)
-
-let join ts =
-  (* List.iter Thread.join ts *)
-  Lwt.join ts
-  
-let _ =
-  let t1 = fork "client" (run_ctx booking_client) () in
-  let t2 = fork "agent" (run_ctx booking_agent) () in
-  print_endline "server started.";
-  run_ctx booking_server ();
-  print_endline "server finished.";
-  join [t1;t2];
   ()
+
+let () =
+  let module A = TravelAgency.A in
+  let module C = A.C.Raw in
+  let module S = A.S.Raw in
+  let _ : Thread.t =
+    Thread.create
+      (run (fun () ->
+           A.initiate_shmem book_ch >>= fun%lin #o ->
+           let rec loop () =
+             match%lin receive (C.role, C.receive_query_or_aCCEPT_or_rEJECT) with
+             | `query(info, #o) ->
+                Printf.printf "agency: received a query from Client: %s\n" info;
+                let price = 100 in
+                send (C.role, C.price, price) >>= fun%lin #o ->
+                Printf.printf "agency: replied with the price of %d\n" price;
+                let info = "CLIENT QUERY:" ^ info in
+                send (S.role, S.info, info) >>= fun%lin #o ->
+                Printf.printf "agency: sent a query information to Server: %s\n" info;
+                loop ()
+             | `ACCEPT(_, #o) ->
+                send (S.role, S.aCCEPT, ()) >>= fun%lin #o ->
+                close
+             | `REJECT(_, #o) ->
+                send (S.role, S.rEJECT, ()) >>= fun%lin #o ->
+                close
+           in
+           loop ())) ()
+  in
+  ()
+
+let () =
+  let module C = TravelAgency.C in
+  let module S = C.S.Raw in
+  let module A = C.A.Raw in
+  run (fun () ->
+      C.initiate_shmem book_ch >>= fun%lin #o ->
+      Printf.printf "client: sending an query\n";
+      send (A.role, A.query, "from London to Paris, 10th Sep 2018") >>= fun%lin #o ->
+      receive (A.role, A.receive_price) >>= fun%lin (`price(p, #o)) ->
+      Printf.printf "client: price %d received from Agency\n" p;
+      Printf.printf "client: proceeding with ACCEPT\n";
+      send (A.role, A.aCCEPT, ()) >>= fun%lin #o ->
+      Printf.printf "client: sending an receipt address to Server\n";
+      send (S.role, S.address, "111-222, West St. Nagoya, Japan") >>= fun%lin #o ->
+      receive (S.role, S.receive_msg) >>= fun%lin (`msg(message, #o)) ->
+      Printf.printf "client: received message from Server \"%s\"\n" message;
+      close)
+   ()

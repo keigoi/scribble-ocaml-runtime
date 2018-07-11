@@ -1,0 +1,31 @@
+module twobuyer.TwoBuyer;
+
+type <ocaml> "int" from "stdlib" as Int;
+type <ocaml> "string" from "stdlib" as String;
+type <ocaml> "string" from "stdlib" as Date;
+
+global protocol TwoBuyerAlt(role A, role B, role S)
+{
+  buy(String) from A to S;
+  amount(Int) from S to A;
+
+  rec LOOP {
+    ask(Int) from A to B;
+    choice at B
+    {
+      again() from B to A;
+      continue LOOP; // Role progress violation for [S] if -nolive is not specified
+    }
+    or
+    {
+      ok() from B to A;
+      ok(Int) from B to S;
+      (Date) from S to A;
+    }
+    or
+    {
+      quit() from B to S;
+      quit() from B to A;
+    }
+  }
+}
